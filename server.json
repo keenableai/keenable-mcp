@@ -1,0 +1,51 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-16/server.schema.json",
+  "name": "ai.keenable/web-search",
+  "description": "Live web search and clean-markdown page fetch over the Keenable web index.",
+  "homepage": "https://keenable.ai",
+  "documentation": "https://docs.keenable.ai/mcp-server",
+  "repository": {
+    "url": "https://github.com/keenableai/keenable-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.keenable.ai/mcp",
+      "headers": [
+        {
+          "name": "X-API-Key",
+          "description": "Optional Keenable API key. Keyless by default (rate-limited); a key lifts the hourly cap.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@keenable/mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "KEENABLE_API_KEY",
+          "description": "Optional Keenable API key. Keyless by default (rate-limited); a key lifts the hourly cap.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ],
+  "keywords": ["web-search", "search", "web", "fetch", "markdown"],
+  "license": "MIT",
+  "author": {
+    "name": "Keenable",
+    "email": "support@keenable.ai",
+    "url": "https://keenable.ai"
+  }
+}

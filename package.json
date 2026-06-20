@@ -1,0 +1,42 @@
+{
+  "name": "@keenable/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for live web search and clean-markdown page fetch over the Keenable web index. Bridges to the hosted Keenable MCP server.",
+  "license": "MIT",
+  "type": "module",
+  "mcpName": "ai.keenable/web-search",
+  "bin": {
+    "keenable-mcp": "src/index.js"
+  },
+  "files": [
+    "src",
+    "server.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "homepage": "https://keenable.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keenableai/keenable-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/keenableai/keenable-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "web-search",
+    "search",
+    "web",
+    "fetch",
+    "markdown",
+    "keenable"
+  ],
+  "author": "Keenable <support@keenable.ai> (https://keenable.ai)",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  }
+}
