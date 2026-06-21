@@ -7,9 +7,9 @@ MCP server for live web search and clean-markdown page fetch over the
 - **Tools:** `search_web_pages`, `fetch_page_content`
 - **Keyless by default** (1,000 requests/hour). An optional API key lifts the cap.
 
-The server is hosted, so most clients just point at the URL. For stdio-only
-clients there is a thin npm wrapper (`@keenable/mcp`) that bridges to the same
-endpoint.
+The server is hosted, so most clients just point at the URL. For clients (or
+config paths) that only accept a stdio `command` there is a thin npm wrapper
+(`@keenable/mcp`) that bridges to the same endpoint.
 
 ## Tools
 
@@ -22,7 +22,8 @@ endpoint.
 
 ### Remote (recommended)
 
-Any client that supports remote Streamable HTTP servers can connect directly:
+Clients with remote MCP support — Cursor, Cline, VS Code, and Claude Desktop's
+Custom Connectors UI — connect to the URL directly:
 
 ```json
 {
@@ -35,9 +36,10 @@ Any client that supports remote Streamable HTTP servers can connect directly:
 }
 ```
 
-### Stdio (Claude Desktop, Cursor, Cline, …)
+### Stdio (e.g. Claude Desktop's `claude_desktop_config.json`)
 
-For clients that only speak stdio, run the wrapper with `npx`:
+For clients or config paths that only accept a stdio `command`, run the wrapper
+with `npx`:
 
 ```json
 {
