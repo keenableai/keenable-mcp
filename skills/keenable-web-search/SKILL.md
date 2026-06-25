@@ -1,131 +1,75 @@
 ---
 name: keenable-web-search
-description: "Live web search and clean page extraction via the Keenable MCP server. Use when you need to: (1) search the web for current, citable information beyond the model's training data, (2) find news, research, docs, or specific pages by describing them in natural language, (3) restrict results to a site or a date range, (4) fetch a known URL as clean markdown. Works with no API key. NOT for: local file operations or anything that does not involve web search or page retrieval."
+version: "1.1.0"
+description: "Keyless live web search via Keenable. Use when the user needs current, citable information from the web — news, research, docs, or any page beyond the model's training data. Runs a bundled Python script (stdlib only, no API key, no install). NOT for local file operations or non-web tasks."
+license: MIT
+repository: https://github.com/keenableai/keenable-mcp
+homepage: https://keenable.ai
+triggers:
+  - keenable
+  - web search
+  - search the web
+  - news
+  - research
+metadata:
+  openclaw:
+    emoji: "🔎"
+    tags:
+      - search
+      - web
+      - research
+      - news
+      - keyless
 ---
 
-# Keenable — Web Search & Page Extraction
+# Keenable Web Search 🔎
 
-Keenable is a hosted web-search engine exposed over MCP. Describe the page you
-want in natural language and it returns ranked results with titles, URLs, and
-snippets, or fetches a known URL as clean, LLM-ready markdown.
+Live web search that works with **no API key and no install** — a small bundled
+Python script (standard library only) calls Keenable's keyless public endpoint
+and returns ranked results with titles, URLs, and snippets.
 
-**MCP server:** `https://api.keenable.ai/mcp` (Streamable HTTP)
-**Free tier:** works keyless — a rate-limited public endpoint, no signup
-**API key:** set the `X-API-Key` header to raise rate limits (and to enable the
-low-latency `realtime` search mode on eligible accounts) — [keenable.ai](https://keenable.ai)
-**Site:** [keenable.ai](https://keenable.ai)
+## Usage
 
-## Setup
-
-Add the MCP server to your agent config:
+Run the bundled script with a natural-language query (describe the ideal page,
+not bare keywords):
 
 ```bash
-# OpenClaw — keyless
-openclaw mcp add keenable --url "https://api.keenable.ai/mcp"
+python3 scripts/search.py "official changelog for the EU AI Act 2025 amendments"
 ```
 
-Or in any MCP config JSON (Streamable HTTP transport):
+Snippets are starting points. Open the most relevant URL (e.g. with the agent's
+web-fetch tool) before relying on a claim, and cite the source.
 
-```json
-{
-  "mcpServers": {
-    "keenable": {
-      "url": "https://api.keenable.ai/mcp"
-    }
-  }
-}
-```
+### Options
 
-To raise rate limits, send your key as an `X-API-Key` header:
-
-```json
-{
-  "mcpServers": {
-    "keenable": {
-      "url": "https://api.keenable.ai/mcp",
-      "headers": { "X-API-Key": "YOUR_KEENABLE_API_KEY" }
-    }
-  }
-}
-```
-
----
-
-## Tool Reference
-
-| Tool | What it does |
+| Flag | What it does |
 |------|-------------|
-| `search_web_pages` | Web search — natural-language query in, ranked results (title, URL, snippet) out |
-| `fetch_page_content` | Fetch a known URL and return the page as clean markdown |
+| `--mode pro` | Default. Higher-quality ranking — best for research and accuracy. |
+| `--mode realtime` | Lowest latency (~0.4s vs ~1.5s) — best for quick, latency-sensitive lookups. |
+| `--site <domain>` | Restrict to one site, e.g. `--site arxiv.org`. |
+| `--published-after` / `--published-before` | `YYYY-MM-DD` bounds on publish date — for time-sensitive topics. |
+| `--acquired-after` / `--acquired-before` | `YYYY-MM-DD` bounds on when the page was indexed. |
+| `--json` | Raw JSON instead of formatted text. |
 
----
+### Examples
 
-## search_web_pages
+```bash
+# Latest news, fastest mode
+python3 scripts/search.py "latest OpenAI model announcements" --mode realtime
 
-Describe the page you want in natural language, not just keywords — Keenable
-ranks on meaning. Snippets are starting points; open the URL with
-`fetch_page_content` before relying on a claim, and cite the source.
+# Research papers from one site, recent only
+python3 scripts/search.py "diffusion models for inverse problems" \
+  --site arxiv.org --published-after 2025-01-01
 
-**Parameters:**
-
-| Parameter | Type | What it does |
-|-----------|------|-------------|
-| `query` | string, required | Semantically rich description of the ideal page (e.g. "official changelog for the EU AI Act 2025 amendments"), not bare keywords |
-| `mode` | `pro` \| `realtime` | `pro` (default) for higher-quality results; `realtime` for the lowest latency (good for voice / latency-sensitive turns). `realtime` requires an enabled account |
-| `site` | string | Restrict results to one site, e.g. `arxiv.org` |
-| `published_after` / `published_before` | string | `YYYY-MM-DD` bounds on publish date — use for time-sensitive topics |
-| `acquired_after` / `acquired_before` | string | `YYYY-MM-DD` bounds on when the page was indexed |
-
-```
-search_web_pages {
-  "query": "blog posts comparing vector databases for recommendation systems",
-  "site": "arxiv.org"
-}
+# Machine-readable output
+python3 scripts/search.py "EU AI Act timeline" --json
 ```
 
-```
-search_web_pages {
-  "query": "latest OpenAI model announcements",
-  "published_after": "2026-01-01",
-  "mode": "realtime"
-}
-```
+## Notes
 
-### Search modes
-
-- `pro` — default. Higher-quality ranking. Best for research and accuracy.
-- `realtime` — fastest response, ideal for latency-sensitive turns (e.g. voice
-  agents). Requires an account with realtime enabled; keyless and standard
-  accounts should use `pro`.
-
----
-
-## fetch_page_content
-
-Fetch a known URL and get the page back as clean markdown — no scraping or HTML
-parsing on your side. Use it to read a result returned by `search_web_pages`
-before citing it.
-
-**Parameters:**
-
-| Parameter | Type | What it does |
-|-----------|------|-------------|
-| `url` | string, required | The URL to fetch, e.g. `https://example.com` |
-| `max_chars` | int | Cap the returned content length. Longer pages are truncated. Defaults to 50000 |
-
-```
-fetch_page_content {
-  "url": "https://example.com/article",
-  "max_chars": 20000
-}
-```
-
----
-
-## Typical flow
-
-1. `search_web_pages` with a descriptive query (add `site` / date filters to
-   narrow).
-2. Pick the most relevant result.
-3. `fetch_page_content` on its URL to read the full page.
-4. Answer from the fetched content and cite the source URL.
+- **Keyless.** The script calls the public endpoint and tags traffic with an
+  `X-Keenable-Title` header; no signup or key is required. The endpoint is
+  rate-limited — on a `429` the script tells you to retry shortly.
+- **No dependencies.** Pure Python standard library (`urllib`), so it runs
+  anywhere Python 3 is available — nothing to `pip install`.
+- More about Keenable: [keenable.ai](https://keenable.ai).
