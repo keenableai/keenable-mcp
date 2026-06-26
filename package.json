@@ -1,6 +1,6 @@
 {
   "name": "@keenable/mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for live web search and clean-markdown page fetch over the Keenable web index. Bridges to the hosted Keenable MCP server.",
   "license": "MIT",
   "type": "module",

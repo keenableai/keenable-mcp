@@ -15,14 +15,15 @@ import {
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
-const REMOTE_URL = process.env.KEENABLE_MCP_URL || "https://api.keenable.ai/mcp";
+const REMOTE_URL =
+  process.env.KEENABLE_MCP_URL || "https://api.keenable.ai/mcp?keenable_title=npm";
 const API_KEY = process.env.KEENABLE_API_KEY;
 
 const requestInit = {};
 if (API_KEY) requestInit.headers = { "X-API-Key": API_KEY };
 
 const client = new Client(
-  { name: "keenable-mcp", version: "0.1.0" },
+  { name: "keenable-mcp", version: "0.1.1" },
   { capabilities: {} },
 );
 
@@ -31,7 +32,7 @@ const transport = new StreamableHTTPClientTransport(new URL(REMOTE_URL), {
 });
 
 const server = new Server(
-  { name: "keenable-web-search", version: "0.1.0" },
+  { name: "keenable-web-search", version: "0.1.1" },
   { capabilities: { tools: {} } },
 );
 
