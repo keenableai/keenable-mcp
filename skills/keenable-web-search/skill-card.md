@@ -11,7 +11,7 @@ MIT <br>
 
 
 ## Use Case: <br>
-Agents run the bundled script to perform natural-language web search — finding current, citable information beyond the model's training data, with optional site and date filters and a low-latency realtime mode. <br>
+Agents run the bundled script to perform natural-language web search — finding current, citable information beyond the model's training data, with optional site and date filters. <br>
 
 ### Deployment Geography for Use: <br>
 Global <br>
@@ -35,7 +35,7 @@ Mitigation: The script is standard-library-only and self-contained; review it be
 **Other Properties Related to Output:** [Search returns ranked results with titles, URLs, snippets, and acquisition dates.] <br>
 
 ## Skill Version(s): <br>
-1.1.0 (source: release evidence) <br>
+1.1.1 (source: release evidence) <br>
 
 ## Ethical Considerations: <br>
 Users should evaluate whether this skill is appropriate for their environment, review any retrieved content before relying on it, and apply their organization's safety, security, and compliance requirements before deployment. <br>

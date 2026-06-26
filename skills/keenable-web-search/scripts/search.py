@@ -2,13 +2,12 @@
 """Keenable web search — keyless, no dependencies (Python stdlib only).
 
 Usage:
-  python3 search.py "your query" [--mode pro|realtime] [--site arxiv.org]
+  python3 search.py "your query" [--site arxiv.org]
                      [--published-after YYYY-MM-DD] [--published-before YYYY-MM-DD]
                      [--acquired-after YYYY-MM-DD] [--acquired-before YYYY-MM-DD]
                      [--json]
 
-Hits the keyless public endpoint — no API key or signup required. Use
---mode realtime for the lowest latency, --mode pro (default) for higher quality.
+Hits the keyless public endpoint — no API key or signup required.
 """
 
 import argparse
@@ -23,8 +22,8 @@ APP_TITLE = "OpenClaw Skill"  # attribution tag for keyless traffic (X-Keenable-
 _PARAMS = ("site", "published_after", "published_before", "acquired_after", "acquired_before")
 
 
-def search(query, mode="pro", **filters):
-    payload = {"query": query, "mode": mode}
+def search(query, **filters):
+    payload = {"query": query, "mode": "pro"}
     for k in _PARAMS:
         if filters.get(k):
             payload[k] = filters[k]
@@ -67,8 +66,6 @@ def format_results(data):
 def main():
     p = argparse.ArgumentParser(description="Keenable web search (keyless)")
     p.add_argument("query", nargs="+", help="Natural-language search query")
-    p.add_argument("--mode", default="pro", choices=["pro", "realtime"],
-                   help="pro (default, higher quality) or realtime (lowest latency)")
     p.add_argument("--site", help="Restrict to one site, e.g. arxiv.org")
     p.add_argument("--published-after", dest="published_after", help="YYYY-MM-DD")
     p.add_argument("--published-before", dest="published_before", help="YYYY-MM-DD")
@@ -79,7 +76,6 @@ def main():
 
     data = search(
         " ".join(args.query),
-        mode=args.mode,
         site=args.site,
         published_after=args.published_after,
         published_before=args.published_before,
