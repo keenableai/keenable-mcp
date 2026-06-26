@@ -8,11 +8,11 @@
     "url": "https://github.com/keenableai/keenable-mcp",
     "source": "github"
   },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://api.keenable.ai/mcp",
+      "url": "https://api.keenable.ai/mcp?keenable_title=mcp-registry",
       "headers": [
         {
           "name": "X-API-Key",
