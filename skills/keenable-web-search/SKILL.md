@@ -1,6 +1,6 @@
 ---
 name: keenable-web-search
-version: "1.1.0"
+version: "1.1.1"
 description: "Keyless live web search via Keenable. Use when the user needs current, citable information from the web — news, research, docs, or any page beyond the model's training data. Runs a bundled Python script (stdlib only, no API key, no install). NOT for local file operations or non-web tasks."
 license: MIT
 repository: https://github.com/keenableai/keenable-mcp
@@ -44,8 +44,6 @@ web-fetch tool) before relying on a claim, and cite the source.
 
 | Flag | What it does |
 |------|-------------|
-| `--mode pro` | Default. Higher-quality ranking — best for research and accuracy. |
-| `--mode realtime` | Lowest latency (~0.4s vs ~1.5s) — best for quick, latency-sensitive lookups. |
 | `--site <domain>` | Restrict to one site, e.g. `--site arxiv.org`. |
 | `--published-after` / `--published-before` | `YYYY-MM-DD` bounds on publish date — for time-sensitive topics. |
 | `--acquired-after` / `--acquired-before` | `YYYY-MM-DD` bounds on when the page was indexed. |
@@ -54,8 +52,8 @@ web-fetch tool) before relying on a claim, and cite the source.
 ### Examples
 
 ```bash
-# Latest news, fastest mode
-python3 scripts/search.py "latest OpenAI model announcements" --mode realtime
+# Latest news
+python3 scripts/search.py "latest OpenAI model announcements"
 
 # Research papers from one site, recent only
 python3 scripts/search.py "diffusion models for inverse problems" \
