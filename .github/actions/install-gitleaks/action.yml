@@ -1,0 +1,43 @@
+name: Install gitleaks
+description: >
+  Install a pinned, checksum-verified gitleaks binary from the upstream release
+  tarball. Used instead of gitleaks/gitleaks-action, which requires a paid
+  GITLEAKS_LICENSE for organization repositories.
+
+inputs:
+  version:
+    description: gitleaks release version, without the leading "v".
+    required: false
+    default: "8.30.1"
+  sha256:
+    description: >
+      Expected SHA-256 of the linux_x64 tarball. Must be updated together with
+      `version`; from gitleaks_<version>_checksums.txt on the release page.
+    required: false
+    default: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        SHA256: ${{ inputs.sha256 }}
+      run: |
+        set -euo pipefail
+        # -L follows redirects, and GitHub does redirect release downloads to a
+        # CDN — so the scheme of the URL we type is not the scheme we end up
+        # fetching over. --proto/--proto-redir pin both hops to HTTPS, which
+        # matters here because this is how the scanner binary itself arrives:
+        # a downgraded hop is a chance to swap the tool that guards the repo.
+        # The checksum below is the second line of defence, not the first.
+        # $RUNNER_TEMP is per-job; /tmp is shared on self-hosted runners, where
+        # two concurrent jobs would race over the same filename.
+        TMP="${RUNNER_TEMP:-/tmp}"
+        curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
+          -sSLo "$TMP/gitleaks.tar.gz" \
+          "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+        echo "${SHA256}  $TMP/gitleaks.tar.gz" | sha256sum -c -
+        tar -xzf "$TMP/gitleaks.tar.gz" -C "$TMP" gitleaks
+        sudo install -m 0755 "$TMP/gitleaks" /usr/local/bin/gitleaks
+        gitleaks version
