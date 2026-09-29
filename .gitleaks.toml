@@ -1,0 +1,230 @@
+# Secret-scanning policy for the Keenable repositories.
+#
+# Written after the yt-indexer key compromise (2026-08-28), where a live AWS
+# access key sat in `search-us-west-2/manifests/s3-sync-job.yaml` in cleartext
+# for 229 days with no control able to see it. See
+# `soc2/INCIDENT_yt-indexer-key-compromise.md`, CAPA KEE-1171.
+#
+# This is the SHARED policy: copy it verbatim into every repo in the rollout,
+# so a finding means the same thing everywhere. Per-repo exceptions do NOT go
+# here — see "Three ways to record an exception" below.
+#
+# Usage:
+#   gitleaks dir  . --config .gitleaks.toml --redact   # working tree
+#   gitleaks git  . --config .gitleaks.toml --redact   # full history
+#
+# Always pass --redact when output leaves your terminal (a report file, a CI
+# log, a ticket). Without it gitleaks prints secrets in cleartext, which turns
+# a finding into a second copy of the leak.
+#
+# After editing this file, run ./scripts/gitleaks-selftest.sh. It asserts that
+# the known false positives stay silent AND that planted secrets are still
+# caught — an allowlist that quietly stops catching things is worse than none.
+
+title = "Keenable secret-scanning policy"
+
+[extend]
+# Start from the upstream ruleset (~170 provider-specific rules: AWS, GCP,
+# Slack, Stripe, OpenAI, private keys, JWTs...) and subtract noise below.
+# Do not replace it with hand-written rules — upstream tracks new key formats
+# and we will not.
+useDefault = true
+
+# =============================================================================
+# Three ways to record an exception — pick the narrowest that fits
+# =============================================================================
+#
+# 1. `.gitleaksignore` — a specific finding, by fingerprint
+#    (`commit:path:rule:line`). This is the default choice. Copy the
+#    fingerprint from the JSON report. Each line is one decision, visible in
+#    a diff, reviewable in a PR.
+#
+# 2. `gitleaks:allow` — a trailing comment on the one line that trips the
+#    scanner. Right for test fixtures and generated samples, because the
+#    exemption lives next to the thing it exempts and moves with it.
+#      TOKEN = "eyJhbGciOi..."  # gitleaks:allow — synthetic fixture
+#
+# 3. This file — ONLY for noise that is wrong in every repo, every time.
+#    A pattern here silences a class of finding across the whole company;
+#    that bar is high, and every entry below cites the observation behind it.
+#
+# The entries here came from an actual reconnaissance scan of the tier-1 repos
+# on 2026-08-29, not from imagination. Untuned, the ratio was roughly one true
+# positive to four false ones — the level at which people stop reading output.
+#
+# ---------------------------------------------------------------------------
+# CRITICAL, and not obvious from the gitleaks docs:
+#
+#   A `paths` entry in a global [[allowlists]] block is a FILE-LEVEL SKIP.
+#   The file is never opened. It is not filtered per-rule, and `condition`
+#   /`matchCondition` = "AND" does NOT restrain it (verified against gitleaks
+#   8.30.1: the debug log shows `skipping file: global allowlist` before any
+#   rule runs). `targetRules` cannot save you either, because no rule ever
+#   sees the content.
+#
+#   So: never use `paths` to scope noise "just in tests" or "just in docs" —
+#   that turns off the AWS-key and private-key rules there too, which is
+#   exactly where a leak hides. Scope by CONTENT instead (`regexes` with
+#   `regexTarget`), which is evaluated after reading and is precise about what
+#   it silences. `paths` is reserved below for files we genuinely never want
+#   scanned at all.
+#
+#   Second trap: these patterns match the path gitleaks REPORTS, which for
+#   `gitleaks dir /abs/path` is absolute. A pattern like `(^|/)tmp/` therefore
+#   also matches any scan rooted under /tmp, silently skipping the entire tree
+#   with `scanned ~0 bytes` as the only clue. Anchor repo-relative directories
+#   with `^`, and always scan a relative target (`.`).
+#
+#   Third trap, for local runs: `gitleaks dir` does NOT respect .gitignore. It
+#   reads what is on disk, so a developer scanning their own checkout sees
+#   their untracked `.env` and `.claude/settings.local.json` reported as
+#   findings — verified in ks_core, where all three are gitignored and
+#   untracked yet all three appear. Nothing is committed and nothing is at
+#   risk; do not "fix" it by widening this file. CI is unaffected: a fresh
+#   checkout has no untracked files, and the pre-commit hook only ever sees
+#   the staged diff.
+#
+#   A scratch directory is NOT a reason to add a path here, however tempting.
+#   `tmp/` was in this list for exactly one revision: it is gitignored in
+#   ks_core, so nothing should be committed under it — but `git add -f` exists,
+#   ks_core's own history has committed files there, and the effect of the entry
+#   was that a live key committed to `tmp/` would sail through CI. Committed
+#   noise belongs in .gitleaksignore, where each suppressed finding is one
+#   reviewable line.
+# ---------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# 1. Files that are not our source code.
+#
+# Vendored dependencies, build output, lockfiles, and the checkouts Claude Code
+# creates under .claude/worktrees — each of those is a full copy of the repo,
+# so leaving it in multiplies every finding by the number of worktrees (88 of
+# webql's 114 working-tree findings were this, and nothing else).
+#
+# A whole-file skip is correct here: we do not author these files, and a secret
+# we committed would be caught in its real home.
+# -----------------------------------------------------------------------------
+[[allowlists]]
+id = "not-our-source"
+description = "Vendored deps, build artifacts, lockfiles, agent worktrees"
+paths = [
+  '''(^|/)\.claude/worktrees/''',
+  '''(^|/)node_modules/''',
+  '''(^|/)target/''',              # Rust build output
+  '''(^|/)\.terraform/''',
+  '''(^|/)charts/.*/charts/''',    # sub-charts vendored under a parent chart
+  '''(^|/)vendor/''',
+  '''(^|/)dist/''',
+  '''\.min\.(js|css)$''',
+]
+# Lockfiles are deliberately NOT excluded. They were, until a measurement
+# showed every `package-lock.json`, `uv.lock` and friend across the enrolled
+# repositories produces zero findings even under the stock ruleset — so the
+# exclusion silenced no noise while removing real coverage. A resolved
+# private-registry URL in a lockfile can carry `https://user:token@…`, and
+# that is exactly the kind of credential nobody would think to look for.
+
+# -----------------------------------------------------------------------------
+# 2. Values whose own shape identifies them as something other than a secret.
+#
+# Not "fields we trust by name". A pattern here must pin down the VALUE, so
+# that a credential appearing in the same position still fires. Keying on a
+# field name alone — `row_key`, `dockey`, `sort_key` — exempts whatever is
+# assigned to it, which is one rename away from being someone's accident.
+#
+# Only shapes actually observed in the 2026-08-29 scan are here. `row_key` was
+# one of them, but it is ks_core's wire format and this file is supposed to
+# carry only what is wrong in every repo, every time; it belongs in that repo's
+# own .gitleaksignore. `sort_key`, `partition_key` and `dockey` were guesses
+# whose value shapes could never be confirmed against real code.
+# -----------------------------------------------------------------------------
+[[allowlists]]
+id = "not-credentials"
+description = "Values with a self-identifying non-secret shape"
+regexTarget = "match"
+regexes = [
+  # gcloud VPC peering allocation — a CIDR list, not a key.
+  '''--ranges=[0-9]{1,3}(\.[0-9]{1,3}){3}/[0-9]{1,2}([, ][^\s]*)?''',
+  # AWS resource IDs are a complete, self-identifying shape.
+  '''\b(sg|vpc|subnet|ami|eni|rtb|igw)-[0-9a-f]{8,17}\b''',
+]
+
+# -----------------------------------------------------------------------------
+# 3. Indirection — the "secret" is a reference, not a value.
+#
+# `${{ secrets.X }}`, `${VAR}`, `os.environ[...]`, `var.foo`, `secretKeyRef`:
+# every one of these is the CORRECT way to handle a credential, and flagging
+# them trains people to ignore the scanner.
+#
+# Matched against the captured secret ITSELF (`regexTarget = "secret"`), not
+# the surrounding line, so a real literal sitting next to a reference still
+# fires. Note the leading `["'`]?` — gitleaks usually captures the quotes.
+#
+# Every pattern is anchored at BOTH ends. A prefix-only pattern such as
+# `^(var|local)\.` would exempt any literal that merely begins with those
+# characters, so a secret whose value happened to start `var.` would pass. The
+# captured text must be a complete, syntactically valid reference and nothing
+# else.
+# -----------------------------------------------------------------------------
+[[allowlists]]
+id = "indirection"
+description = "Env vars, CI expressions, Terraform/k8s references — not literals"
+regexTarget = "secret"
+regexes = [
+  # ${VAR} / $VAR, optionally quoted, optionally with a trailing ':' (curl --user)
+  '''^["'`\s]*\$\{[A-Za-z_][A-Za-z0-9_]*\}:?["'`\s]*$''',
+  '''^["'`\s]*\$[A-Za-z_][A-Za-z0-9_]*:?["'`\s]*$''',
+  # GitHub Actions expressions
+  '''^["'`\s]*\$\{\{\s*(secrets|env|vars|inputs|matrix)\.[A-Za-z0-9_-]+\s*\}\}:?["'`\s]*$''',
+  # Terraform references. Each segment must look like a Terraform identifier —
+  # lowercase snake_case, bounded length. Allowing `[A-Za-z0-9]+` here would be
+  # a bypass rather than an allowlist: `var.wJalr0utnFEMI2K7MDENGbPxRfiCYz...`
+  # is a syntactically valid reference AND a pasted AWS secret, and the
+  # self-test asserts that case is still caught.
+  '''^["'`]?(var|local|module|data|random_password|aws_secretsmanager_secret(_version)?)(\.[a-z_][a-z0-9_]{0,40})+(\[[0-9"'a-z_-]+\])?["'`]?$''',
+  # Runtime environment lookups
+  '''^["'`]?(os\.environ|os\.getenv|process\.env|std::env::var)[\[(.]["'`]?[A-Za-z_][A-Za-z0-9_]*["'`]?[\])]?["'`]?$''',
+  # Kubernetes indirection
+  '''^["'`]?(secretKeyRef|valueFrom|configMapKeyRef)["'`]?$''',
+  # Secret-manager URIs
+  '''^["'`]?(vault|sops|awsSecret|gcpSecret):[A-Za-z0-9_/.-]+["'`]?$''',
+]
+
+# -----------------------------------------------------------------------------
+# 4. Self-declared placeholders.
+#
+# `YOUR_API_KEY` in the Triton operator README, `<token>`, `changeme`, `xxxxxx`.
+# Matched against the secret itself, so the VALUE has to announce that it is a
+# placeholder — a real key on a line that merely contains the word "example"
+# still fires.
+# -----------------------------------------------------------------------------
+[[allowlists]]
+id = "placeholders"
+description = "Values that declare themselves to be examples"
+regexTarget = "secret"
+regexes = [
+  '''(?i)^["'`]?(your|my|the)[-_ ]?\w*[-_ ]?(key|token|secret|password)["'`]?$''',
+  '''(?i)^["'`]?(replace[-_ ]?me|changeme|placeholder|redacted|dummy|fake|todo|tbd)["'`]?$''',
+  '''(?i)^["'`]?<[^>]+>["'`]?$''',          # <your-key>, <TOKEN>
+  '''(?i)^["'`]?(x{6,}|\.{3,}|0{8,}|1234567890\S*)["'`]?$''',
+]
+
+# -----------------------------------------------------------------------------
+# 5. Grafana dashboard panel identifiers.
+#
+# Exported dashboards carry `"key": "Q-<uuid>-<n>"` on every query panel — a
+# stable panel ID generated by Grafana, meaningless outside the JSON.
+#
+# Keyed on the shape rather than on the dashboard path, deliberately: a `paths`
+# entry would stop the AWS and private-key rules from ever reading those files
+# (see the CRITICAL note above), and a datasource block is a plausible place to
+# find a real credential.
+#
+# NB: `generic-api-key` starts its match AT the identifier, so the captured
+# text reads `key": "...` with no leading quote — anchor regexes accordingly.
+# -----------------------------------------------------------------------------
+[[allowlists]]
+id = "grafana-panel-ids"
+description = "Query-panel keys in exported Grafana dashboard JSON"
+regexTarget = "match"
+regexes = ['''key"?\s*:\s*"Q-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-''']
