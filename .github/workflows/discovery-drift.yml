@@ -9,6 +9,10 @@ name: discovery-drift
 on:
   pull_request:
     branches: [main]
+  # Commits pushed straight to main get checked too, not just pull requests.
+  push:
+    branches: [main]
+    paths: [src/tools.js, scripts/check-discovery.mjs, .github/workflows/discovery-drift.yml]
   schedule:
     # Mondays 07:00 UTC.
     - cron: '0 7 * * 1'
