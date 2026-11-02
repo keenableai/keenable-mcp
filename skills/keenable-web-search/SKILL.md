@@ -1,6 +1,6 @@
 ---
 name: keenable-web-search
-version: "1.1.2"
+version: "1.2.0"
 description: "Web search and research skill. Search the web for current, citable information — news, research papers, documentation, company and market research, fact-checking, and any page beyond the model's training data. Runs a bundled Python script (stdlib only, no API key, no install). NOT for local file operations or non-web tasks."
 license: MIT
 repository: https://github.com/keenableai/keenable-mcp
@@ -65,10 +65,19 @@ web-fetch tool) before relying on a claim, and cite the source.
 
 | Flag | What it does |
 |------|-------------|
+| `--mode pro\|realtime` | `pro` (default) for higher-quality results; `realtime` for the fastest answer. |
 | `--site <domain>` | Restrict the search to one site, e.g. `--site arxiv.org`. |
-| `--published-after` / `--published-before` | `YYYY-MM-DD` bounds on publish date, for time-sensitive research. |
-| `--acquired-after` / `--acquired-before` | `YYYY-MM-DD` bounds on when the page was indexed. |
+| `--published-after` / `--published-before` | Bounds on publish date, for time-sensitive research. `--published-after 7d` is how to get recent results. |
+| `--acquired-after` / `--acquired-before` | Bounds on when the page was indexed. |
+| `--query-time <when>` | Point-in-time search: the web as it stood at that moment, excluding every newer page. An upper bound, **not** a recency filter (`7d` means "as of 7 days ago"); use `--published-after` for recent results. |
+| `--max-results <n>` | Number of results, 1-50 (default 10). |
+| `--snippet-max-length <n>` | Snippet length per result, 180-10000 characters (text output shows 400 by default). |
 | `--json` | Raw JSON instead of formatted text. |
+
+Date flags accept a `YYYY-MM-DD` date, an ISO 8601 datetime
+(`2026-09-20T00:00:00Z`), or a relative offset back from now such as `7d` or
+`3mo`. Out-of-range values are rejected by the API and the script prints its
+error message.
 
 ### Examples
 
@@ -79,6 +88,10 @@ python3 scripts/search.py "latest OpenAI model announcements"
 # Research papers from one site, recent only
 python3 scripts/search.py "diffusion models for inverse problems" \
   --site arxiv.org --published-after 2025-01-01
+
+# News from the last week, more results, fastest mode
+python3 scripts/search.py "EU AI Act enforcement news" \
+  --published-after 7d --max-results 25 --mode realtime
 
 # Documentation lookup
 python3 scripts/search.py "Python asyncio TaskGroup reference"
