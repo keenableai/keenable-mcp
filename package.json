@@ -8,6 +8,9 @@
   "bin": {
     "keenable-mcp": "src/index.js"
   },
+  "scripts": {
+    "check:discovery": "node scripts/check-discovery.mjs"
+  },
   "files": [
     "src",
     "server.json",
