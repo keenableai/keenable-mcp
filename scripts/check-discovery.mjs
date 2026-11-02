@@ -13,6 +13,42 @@ import { TOOLS } from "../src/tools.js";
 const URL_ =
   process.env.KEENABLE_MCP_URL || "https://api.keenable.ai/mcp?keenable_title=ci";
 
+// Parse an SSE body into its JSON messages. Events are separated by a blank
+// line, and one event's payload may span several `data:` lines, which join
+// with "\n" (per the SSE spec). Non-JSON events are skipped.
+function sseMessages(body) {
+  return body
+    .split(/\r?\n\r?\n/)
+    .map((event) =>
+      event
+        .split(/\r?\n/)
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).replace(/^ /, ""))
+        .join("\n"),
+    )
+    .filter(Boolean)
+    .flatMap((data) => {
+      try {
+        return [JSON.parse(data)];
+      } catch {
+        return [];
+      }
+    });
+}
+
+// A brief outage of the hosted server should not look like drift: retry a
+// couple of times before giving up with exit code 2.
+async function liveToolsWithRetry(attempts = 3) {
+  for (let i = 1; ; i++) {
+    try {
+      return await liveTools();
+    } catch (err) {
+      if (i >= attempts) throw err;
+      await new Promise((r) => setTimeout(r, 2000 * i));
+    }
+  }
+}
+
 async function liveTools() {
   const res = await fetch(URL_, {
     method: "POST",
@@ -29,13 +65,8 @@ async function liveTools() {
   // The server may answer as plain JSON or as an SSE stream.
   let msg;
   if ((res.headers.get("content-type") || "").includes("text/event-stream")) {
-    const data = body
-      .split(/\r?\n/)
-      .filter((l) => l.startsWith("data:"))
-      .map((l) => l.slice(5).trim())
-      .find((d) => d.includes('"result"') || d.includes('"error"'));
-    if (!data) throw new Error(`no data event in SSE response: ${body.slice(0, 500)}`);
-    msg = JSON.parse(data);
+    msg = sseMessages(body).find((m) => m?.id === 1);
+    if (!msg) throw new Error(`no response to request 1 in SSE stream: ${body.slice(0, 500)}`);
   } else {
     msg = JSON.parse(body);
   }
@@ -62,10 +93,12 @@ function diff(live, local, path, out) {
 
 let live;
 try {
-  live = await liveTools();
+  live = await liveToolsWithRetry();
 } catch (err) {
-  console.error(`check-discovery: could not read tools/list from ${URL_}`);
-  console.error(`  ${err.message}`);
+  // fetch() reports network failures as "fetch failed"; the cause says why.
+  const cause = err.cause?.code || err.cause?.message;
+  console.error(`check-discovery: could not read tools/list from ${URL_} (3 attempts)`);
+  console.error(`  ${err.message}${cause ? ` (${cause})` : ""}`);
   process.exit(2);
 }
 

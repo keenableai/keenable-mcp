@@ -5,6 +5,9 @@ name: discovery-drift
 # it to the server, so it drifts silently when the server adds or changes a
 # parameter. This job diffs it against the live tools/list: on pull requests
 # so an edit can't introduce drift, and weekly so server-side changes surface.
+# GitHub emails a failed scheduled run only to the user who last edited the
+# cron line; watch the Actions tab or this workflow's badge for drift.
+# Exit code 2 (server unreachable after retries) fails the job like drift does.
 
 on:
   pull_request:
