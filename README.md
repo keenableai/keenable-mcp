@@ -94,7 +94,7 @@ search logic in this package; the index and tools live behind
 `https://api.keenable.ai/mcp`. Environment variables:
 
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
-- `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp`).
+- `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`).
 
 ## Releasing
 

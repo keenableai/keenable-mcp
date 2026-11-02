@@ -35,18 +35,26 @@ const transport = new StreamableHTTPClientTransport(new URL(REMOTE_URL), {
   requestInit,
 });
 
-const server = new Server(
-  { name: "keenable-web-search", version: VERSION },
-  { capabilities: { tools: {} } },
-);
-
-server.setRequestHandler(ListToolsRequestSchema, () => client.listTools());
-server.setRequestHandler(CallToolRequestSchema, (request) =>
-  client.callTool(request.params),
-);
+// The stdio server is built after the remote handshake so it can pass the
+// hosted server's `instructions` (how to search well, what query_time means)
+// through to the client. Without them, npx users never see that guidance.
+function bridgeServer(instructions) {
+  const server = new Server(
+    { name: "keenable-web-search", version: VERSION },
+    { capabilities: { tools: {} }, ...(instructions ? { instructions } : {}) },
+  );
+  server.setRequestHandler(ListToolsRequestSchema, () => client.listTools());
+  server.setRequestHandler(CallToolRequestSchema, (request) =>
+    client.callTool(request.params),
+  );
+  return server;
+}
 
 async function main() {
   await client.connect(transport);
+  // getInstructions() exists in every MCP SDK release this package accepts
+  // (^1.12.0); the optional call just keeps a broken install from crashing.
+  const server = bridgeServer(client.getInstructions?.());
   await server.connect(new StdioServerTransport());
 }
 
