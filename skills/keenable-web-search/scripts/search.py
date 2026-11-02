@@ -81,7 +81,8 @@ def format_results(data, max_snippet=400):
         # empty, kept only as a fallback for older responses.
         snippet = (r.get("snippet") or r.get("description") or "").replace("\n", " ").strip()
         if len(snippet) > max_snippet:
-            snippet = snippet[:max_snippet] + "..."
+            # Keep the ellipsis inside the limit the caller asked for.
+            snippet = snippet[: max(max_snippet - 3, 0)].rstrip() + "..."
         out.append(f"{i}. {title}\n   {url}")
         if snippet:
             out.append(f"   {snippet}")
