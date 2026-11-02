@@ -96,6 +96,15 @@ search logic in this package; the index and tools live behind
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
 - `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp`).
 
+## Releasing
+
+The npm version lives only in `package.json`; the bridge reads it at runtime.
+`server.json` (the MCP Registry manifest) must repeat it as a literal in
+`packages[].version`, so bump both. `npm run check:version` compares them and
+runs automatically before `npm publish`. The top-level `server.json` `version`
+is the registry entry's own version and is bumped whenever `server.json`
+changes.
+
 ## Links
 
 - Docs: https://docs.keenable.ai/mcp-server

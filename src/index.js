@@ -14,6 +14,10 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { createRequire } from "node:module";
+
+// package.json is the single source of the version; a release bumps it there.
+const { version: VERSION } = createRequire(import.meta.url)("../package.json");
 
 const REMOTE_URL =
   process.env.KEENABLE_MCP_URL || "https://api.keenable.ai/mcp?keenable_title=npm";
@@ -23,7 +27,7 @@ const requestInit = {};
 if (API_KEY) requestInit.headers = { "X-API-Key": API_KEY };
 
 const client = new Client(
-  { name: "keenable-mcp", version: "0.1.1" },
+  { name: "keenable-mcp", version: VERSION },
   { capabilities: {} },
 );
 
@@ -32,7 +36,7 @@ const transport = new StreamableHTTPClientTransport(new URL(REMOTE_URL), {
 });
 
 const server = new Server(
-  { name: "keenable-web-search", version: "0.1.1" },
+  { name: "keenable-web-search", version: VERSION },
   { capabilities: { tools: {} } },
 );
 
