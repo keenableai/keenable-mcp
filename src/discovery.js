@@ -12,6 +12,7 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createRequire } from "node:module";
+import { serverInfo } from "./metadata.js";
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
@@ -90,11 +91,8 @@ const TOOLS = [
 ];
 
 const server = new Server(
-  {
-    name: "keenable-web-search",
-    // package.json is the single source of the version, as in src/index.js.
-    version: createRequire(import.meta.url)("../package.json").version,
-  },
+  // package.json is the single source of the version, as in src/index.js.
+  serverInfo(createRequire(import.meta.url)("../package.json").version),
   { capabilities: { tools: {} } },
 );
 

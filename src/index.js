@@ -15,6 +15,7 @@ import {
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { createRequire } from "node:module";
+import { serverInfo } from "./metadata.js";
 
 // package.json is the single source of the version; a release bumps it there.
 const { version: VERSION } = createRequire(import.meta.url)("../package.json");
@@ -37,10 +38,11 @@ const transport = new StreamableHTTPClientTransport(new URL(REMOTE_URL), {
 
 // The stdio server is built after the remote handshake so it can pass the
 // hosted server's `instructions` (how to search well, what query_time means)
-// through to the client. Without them, npx users never see that guidance.
-function bridgeServer(instructions) {
+// and its title, description, website and icon through to the client.
+// Without them, npx users never see that guidance or branding.
+function bridgeServer(instructions, remoteInfo) {
   const server = new Server(
-    { name: "keenable-web-search", version: VERSION },
+    serverInfo(VERSION, remoteInfo),
     { capabilities: { tools: {} }, ...(instructions ? { instructions } : {}) },
   );
   server.setRequestHandler(ListToolsRequestSchema, () => client.listTools());
@@ -54,7 +56,7 @@ async function main() {
   await client.connect(transport);
   // getInstructions() exists in every MCP SDK release this package accepts
   // (^1.12.0); the optional call just keeps a broken install from crashing.
-  const server = bridgeServer(client.getInstructions?.());
+  const server = bridgeServer(client.getInstructions?.(), client.getServerVersion?.());
   await server.connect(new StdioServerTransport());
 }
 

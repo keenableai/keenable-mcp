@@ -96,6 +96,18 @@ search logic in this package; the index and tools live behind
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
 - `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`).
 
+## Development
+
+```sh
+npm install
+npm test
+```
+
+`npm test` runs the unit tests and a stdio smoke test of the discovery build
+(`src/discovery.js`): `initialize` must advertise the server metadata and
+`tools/list` must return both tools. CI runs it on Node 18, 20 and 22 and on
+the oldest MCP SDK the package accepts.
+
 ## Releasing
 
 The npm version lives only in `package.json`; the bridge reads it at runtime.
