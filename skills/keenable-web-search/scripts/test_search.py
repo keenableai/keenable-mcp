@@ -1,8 +1,4 @@
-"""Offline tests for search.py (stdlib unittest, no network).
-
-Run from the repo root:
-  python3 -m unittest discover -s skills/keenable-web-search/scripts -p 'test_*.py'
-"""
+"""Offline tests for search.py (no network)."""
 
 import contextlib
 import io

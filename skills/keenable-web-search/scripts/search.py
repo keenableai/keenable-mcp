@@ -8,13 +8,8 @@ Usage:
                      [--acquired-after YYYY-MM-DD] [--acquired-before YYYY-MM-DD]
                      [--json]
 
---include-domain / --exclude-domain are repeatable and accept comma-separated
-lists (e.g. --include-domain press.un.org,undocs.org --include-domain .gov).
-They are sent as the include_domains / exclude_domains arrays: results come only
-from the included domains and never from the excluded ones (exclude wins).
-Entries may be a host (example.com, also matches subdomains), a host with a
-path prefix (example.com/docs), or a suffix (.gov). --site is a single-domain
-alias and cannot be combined with --include-domain.
+--include-domain / --exclude-domain are repeatable and take comma lists;
+exclude wins, and --site cannot be combined with --include-domain.
 
 Hits the keyless public endpoint — no API key or signup required.
 """
@@ -40,14 +35,9 @@ _PARAMS = (
 
 
 def split_domains(values):
-    """Flatten repeated / comma-separated domain flags into one list.
+    """Flatten repeated, comma-separated domain flags into a deduplicated list.
 
-    ``values`` is what argparse collects for a repeatable flag (``None`` or a
-    list of raw strings). Each string may hold several comma-separated entries.
-    Whitespace around entries and empty pieces (e.g. a trailing comma) are
-    dropped; exact duplicates are removed while keeping order. Normalization
-    and validation (www., case, punycode, rejected forms) happen server-side.
-    """
+    Validation and normalization happen server-side."""
     out = []
     for raw in values or ():
         for part in raw.split(","):
@@ -58,11 +48,7 @@ def split_domains(values):
 
 
 def build_payload(query, **filters):
-    """Build the JSON body for POST /v1/search/public.
-
-    Only filters with a value are sent; empty domain lists are omitted (the API
-    rejects ``include_domains: []``).
-    """
+    """Build the JSON body, omitting empty filters (the API rejects ``include_domains: []``)."""
     payload = {"query": query, "mode": "pro"}
     for k in _PARAMS:
         if filters.get(k):
@@ -92,13 +78,7 @@ def search(query, **filters):
 
 
 def format_results(data):
-    """Render a search response as numbered plain text.
-
-    A response ``warning`` (e.g. the domain filter removed results, or inline
-    ``site:`` tokens were dropped because include_domains was set) is printed
-    first as a ``Note:`` line, also when no results are left, so the signal is
-    not lost outside ``--json``.
-    """
+    """Render a search response as numbered plain text, led by any ``warning`` as a Note line."""
     out = []
     warning = data.get("warning")
     if warning:

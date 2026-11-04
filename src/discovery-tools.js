@@ -1,9 +1,5 @@
-// Static tool schemas for the discovery build (src/discovery.js).
-//
-// Kept free of imports so it can be loaded and tested offline. These mirror
-// the hosted Keenable MCP server's tools for catalog scanners only; they are
-// not a validator. The hosted server checks every argument (entry forms, the
-// 200-entry cap, site + include_domains) and returns the error.
+// Static tool schemas for the discovery build, kept import-free for offline tests.
+// Not a validator: the hosted server checks every argument.
 
 export const TOOLS = [
   {
