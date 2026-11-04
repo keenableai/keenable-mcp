@@ -75,6 +75,8 @@ class ParseArgsTest(unittest.TestCase):
             (["q", "--include-domain", " , "], "--include-domain needs at least one domain"),
             (["q", "--site", "a.com", "--include-domain", "b.com"],
              "--site cannot be combined with --include-domain"),
+            (["q", "--site", "a.com", "--include-domain", " , "],
+             "--include-domain needs at least one domain"),
         ]
         for argv, message in cases:
             with self.subTest(argv=argv):
@@ -175,6 +177,10 @@ class RequestTest(unittest.TestCase):
             "acquired_after": "2023-01-01",
             "acquired_before": "2025-01-01",
         })
+
+    def test_plain_query_body_has_no_filters(self):
+        sent, _ = self._run(["q"])
+        self.assertEqual(json.loads(sent[0].data), {"query": "q", "mode": "pro"})
 
     def test_site_with_exclude_reaches_body(self):
         sent, _ = self._run(["q", "--site", "a.com", "--exclude-domain", "b.com"])
