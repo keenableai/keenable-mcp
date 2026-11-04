@@ -1,6 +1,6 @@
 ---
 name: keenable-web-search
-version: "1.1.2"
+version: "1.2.0"
 description: "Web search and research skill. Search the web for current, citable information — news, research papers, documentation, company and market research, fact-checking, and any page beyond the model's training data. Runs a bundled Python script (stdlib only, no API key, no install). NOT for local file operations or non-web tasks."
 license: MIT
 repository: https://github.com/keenableai/keenable-mcp
@@ -66,9 +66,16 @@ web-fetch tool) before relying on a claim, and cite the source.
 | Flag | What it does |
 |------|-------------|
 | `--site <domain>` | Restrict the search to one site, e.g. `--site arxiv.org`. |
+| `--include-domain <domain>` | Only return results from these domains. Repeatable, and accepts comma lists: `--include-domain press.un.org,undocs.org --include-domain .gov`. Entries can be a host (`example.com`, includes subdomains), a host with a path prefix (`example.com/docs`), or a suffix (`.gov`). Cannot be combined with `--site`. |
+| `--exclude-domain <domain>` | Never return results from these domains (same forms, repeatable, comma lists). Exclude wins over include. |
 | `--published-after` / `--published-before` | `YYYY-MM-DD` bounds on publish date, for time-sensitive research. |
 | `--acquired-after` / `--acquired-before` | `YYYY-MM-DD` bounds on when the page was indexed. |
 | `--json` | Raw JSON instead of formatted text. |
+
+Use `--site` for a single site. Use `--include-domain` when results must come
+only from a set of trusted sources (several sites, a path, or a suffix such as
+`.gov`). Use `--exclude-domain` to drop known-noisy sites from an otherwise open
+search. A narrow include list can return fewer results than usual.
 
 ### Examples
 
@@ -79,6 +86,14 @@ python3 scripts/search.py "latest OpenAI model announcements"
 # Research papers from one site, recent only
 python3 scripts/search.py "diffusion models for inverse problems" \
   --site arxiv.org --published-after 2025-01-01
+
+# Only official sources: several domains plus a suffix
+python3 scripts/search.py "UN Security Council resolution on maritime security" \
+  --include-domain press.un.org,undocs.org --include-domain .gov
+
+# Open search minus noisy sites
+python3 scripts/search.py "rust async runtime comparison" \
+  --exclude-domain pinterest.com,quora.com
 
 # Documentation lookup
 python3 scripts/search.py "Python asyncio TaskGroup reference"

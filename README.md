@@ -15,8 +15,14 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 
 | Tool | Description |
 |---|---|
-| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode`, `site`, `published_after` / `published_before`, `acquired_after` / `acquired_before`. |
+| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode`, `site`, `include_domains` / `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`. |
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 50000). |
+
+Use `site` for one site. Use `include_domains` (array) when results must come
+only from a set of sources (hosts like `example.com`, paths like
+`example.com/docs`, or suffixes like `.gov`), and `exclude_domains` to drop
+specific sites; exclude wins, and `site` cannot be combined with
+`include_domains`.
 
 ## Use it
 
