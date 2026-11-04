@@ -76,6 +76,9 @@ Use `--site` for a single site. Use `--include-domain` when results must come
 only from a set of trusted sources (several sites, a path, or a suffix such as
 `.gov`). Use `--exclude-domain` to drop known-noisy sites from an otherwise open
 search. A narrow include list can return fewer results than usual.
+If the output starts with a `Note:` line, the API returned a `warning`: the
+domain filter removed results (or dropped inline `site:` tokens), so the list
+may be shorter than usual or empty.
 
 ### Examples
 

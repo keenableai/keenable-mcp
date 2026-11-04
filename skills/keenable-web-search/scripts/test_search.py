@@ -67,5 +67,22 @@ class ParseArgsTest(unittest.TestCase):
         self.assertEqual(self._exit_code(["q", "--site", "a.com", "--include-domain", "b.com"]), 2)
 
 
+class FormatResultsTest(unittest.TestCase):
+    def test_no_results(self):
+        self.assertEqual(search.format_results({"results": []}), "No results.")
+
+    def test_warning_shown_with_results(self):
+        out = search.format_results(
+            {"warning": "Some results were removed by the domain filter.",
+             "results": [{"title": "T", "url": "https://a.com"}]}
+        )
+        self.assertTrue(out.startswith("Note: Some results were removed by the domain filter.\n"))
+        self.assertIn("1. T\n   https://a.com", out)
+
+    def test_warning_shown_when_no_results_left(self):
+        out = search.format_results({"warning": "W", "results": []})
+        self.assertEqual(out, "Note: W\nNo results.")
+
+
 if __name__ == "__main__":
     unittest.main()

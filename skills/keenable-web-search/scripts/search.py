@@ -92,10 +92,21 @@ def search(query, **filters):
 
 
 def format_results(data):
+    """Render a search response as numbered plain text.
+
+    A response ``warning`` (e.g. the domain filter removed results, or inline
+    ``site:`` tokens were dropped because include_domains was set) is printed
+    first as a ``Note:`` line, also when no results are left, so the signal is
+    not lost outside ``--json``.
+    """
+    out = []
+    warning = data.get("warning")
+    if warning:
+        out.append(f"Note: {warning}")
     results = data.get("results", [])
     if not results:
-        return "No results."
-    out = []
+        out.append("No results.")
+        return "\n".join(out)
     for i, r in enumerate(results, 1):
         title = r.get("title") or "Untitled"
         url = r.get("url", "")
