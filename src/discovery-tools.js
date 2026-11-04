@@ -1,6 +1,3 @@
-// Static tool schemas for the discovery build, kept import-free for offline tests.
-// Not a validator: the hosted server checks every argument.
-
 export const TOOLS = [
   {
     name: "search_web_pages",

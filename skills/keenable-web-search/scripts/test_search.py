@@ -1,4 +1,3 @@
-"""Offline tests for search.py (no network)."""
 
 import contextlib
 import io
@@ -137,7 +136,6 @@ class _Response(io.BytesIO):
 
 
 class RequestTest(unittest.TestCase):
-    """Runs main() against a mocked urlopen."""
 
     def _run(self, argv, response=None, error=None):
         sent = []

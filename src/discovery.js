@@ -4,11 +4,10 @@
 // Catalog scanners run the server in a sandbox without outbound network and
 // call `tools/list` to score the server. The real bridge (src/index.js)
 // connects to the hosted endpoint, which those sandboxes cannot reach, so this
-// file instead declares the same tool schemas statically (in
-// src/discovery-tools.js) and does not touch the network. Real `tools/call`
-// requests are served by the hosted server at https://api.keenable.ai/mcp via
-// src/index.js (or the remote URL directly); here they return a pointer to
-// that endpoint.
+// file instead declares the same tool schemas statically and does not touch the
+// network. Real `tools/call` requests are served by the hosted server at
+// https://api.keenable.ai/mcp via src/index.js (or the remote URL directly);
+// here they return a pointer to that endpoint.
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";

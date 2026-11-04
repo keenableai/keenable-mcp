@@ -1,5 +1,3 @@
-// Offline check of the static schemas catalog scanners read (src/discovery.js).
-// Run with: node --test
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -20,7 +18,6 @@ for (const name of ["include_domains", "exclude_domains"]) {
     assert.equal(prop.type, "array");
     assert.deepEqual(prop.items, { type: "string" });
     assert.ok(prop.description.length > 0);
-    // Clients that fill defaults would send include_domains: [], which the API rejects.
     assert.equal("default" in prop, false);
   });
 }

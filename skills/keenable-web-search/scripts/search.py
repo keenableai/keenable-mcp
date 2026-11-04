@@ -8,9 +8,6 @@ Usage:
                      [--acquired-after YYYY-MM-DD] [--acquired-before YYYY-MM-DD]
                      [--json]
 
---include-domain / --exclude-domain are repeatable and take comma lists;
-exclude wins, and --site cannot be combined with --include-domain.
-
 Hits the keyless public endpoint — no API key or signup required.
 """
 
@@ -35,9 +32,6 @@ _PARAMS = (
 
 
 def split_domains(values):
-    """Flatten repeated, comma-separated domain flags into a deduplicated list.
-
-    Validation and normalization happen server-side."""
     out = []
     for raw in values or ():
         for part in raw.split(","):
@@ -48,7 +42,6 @@ def split_domains(values):
 
 
 def build_payload(query, **filters):
-    """Build the JSON body, omitting empty filters (the API rejects ``include_domains: []``)."""
     payload = {"query": query, "mode": "pro"}
     for k in _PARAMS:
         if filters.get(k):
@@ -78,7 +71,6 @@ def search(query, **filters):
 
 
 def format_results(data):
-    """Render a search response as numbered plain text, led by any ``warning`` as a Note line."""
     out = []
     warning = data.get("warning")
     if warning:
@@ -100,7 +92,6 @@ def format_results(data):
 
 
 def parse_args(argv=None):
-    """Parse CLI args; returns (args, include_domains, exclude_domains)."""
     p = argparse.ArgumentParser(description="Keenable web search (keyless)")
     p.add_argument("query", nargs="+", help="Natural-language search query")
     p.add_argument("--site", help="Restrict to one site, e.g. arxiv.org")
