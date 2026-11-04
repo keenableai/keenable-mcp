@@ -23,7 +23,7 @@ That is the complete setup. On first run `npx` downloads `@keenable/mcp`, which
 connects to the hosted server at `https://api.keenable.ai/mcp` and exposes two
 tools:
 
-- `search_web_pages` — live web search. Required arg `query`; optional `mode`, `site`, `published_after`/`published_before`, `acquired_after`/`acquired_before`.
+- `search_web_pages` — live web search. Required arg `query`; optional `mode`, `site`, `include_domains` / `exclude_domains` (arrays of domains; exclude wins, not combinable with `site`), `published_after`/`published_before`, `acquired_after`/`acquired_before`.
 - `fetch_page_content` — fetch a URL and return clean markdown. Required arg `url`; optional `max_chars` (default 50000).
 
 ## Optional: API key
