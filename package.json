@@ -33,6 +33,9 @@
     "keenable"
   ],
   "author": "Keenable <support@keenable.ai> (https://keenable.ai)",
+  "scripts": {
+    "test": "node --test"
+  },
   "engines": {
     "node": ">=18"
   },

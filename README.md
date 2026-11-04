@@ -24,6 +24,12 @@ only from a set of sources (hosts like `example.com`, paths like
 specific sites; exclude wins, and `site` cannot be combined with
 `include_domains`.
 
+The hosted server is the validator: the npm wrapper and the skill script pass
+these lists through without checking the entries. A bad entry (scheme, port, IP literal, empty
+string), an empty `include_domains`, more than 200 entries in total, or `site`
+together with `include_domains` comes back as an error from the server naming
+the field and entry.
+
 ## Use it
 
 ### Remote (recommended)
