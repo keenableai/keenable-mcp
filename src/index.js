@@ -16,6 +16,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { createRequire } from "node:module";
 import { serverInfo } from "./metadata.js";
+import { instrumentServer } from "./posthog.js";
 
 // package.json is the single source of the version; a release bumps it there.
 const { version: VERSION } = createRequire(import.meta.url)("../package.json");
@@ -45,6 +46,7 @@ function bridgeServer(instructions, remoteInfo) {
     serverInfo(VERSION, remoteInfo),
     { capabilities: { tools: {} }, ...(instructions ? { instructions } : {}) },
   );
+  instrumentServer(server);
   server.setRequestHandler(ListToolsRequestSchema, () => client.listTools());
   server.setRequestHandler(CallToolRequestSchema, (request) =>
     client.callTool(request.params),

@@ -13,6 +13,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createRequire } from "node:module";
 import { serverInfo } from "./metadata.js";
+import { instrumentServer } from "./posthog.js";
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
@@ -24,6 +25,7 @@ const server = new Server(
   serverInfo(createRequire(import.meta.url)("../package.json").version),
   { capabilities: { tools: {} } },
 );
+instrumentServer(server);
 
 server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: TOOLS }));
 
