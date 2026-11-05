@@ -94,7 +94,7 @@ export const TOOLS = [
   },
   {
     "name": "fetch_page_content",
-    "description": "Fetch and extract content from a web page. Returns the page content in markdown format.",
+    "description": "Fetch and extract content from a web page. Returns the page content in markdown format.\n\nSet include_images to also get the page's images (logo, cover, icon, content) with their URLs, alt text and size. Use it when you need a company's logo, a cover image or product shots. If no logo is returned, the first icon is the best brand mark.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -116,6 +116,17 @@ export const TOOLS = [
           "type": "string",
           "maxLength": 2000,
           "description": "Extraction instruction for this page. When set, an LLM reads the fetched page and the returned content is only the output for this instruction instead of the full page; use it when you need one detail from a long page. Example: \"List all pricing tiers with their monthly prices\"."
+        },
+        "include_images": {
+          "type": "boolean",
+          "default": false,
+          "description": "Also return the page's images after the content, each with a role (logo, cover, icon or content), URL, alt text and size when known. Use it to find a logo, cover image or product shots."
+        },
+        "max_images": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "description": "How many images to return when include_images is true. When omitted, up to 5 are returned."
         },
         "session_id": {
           "type": "string",
