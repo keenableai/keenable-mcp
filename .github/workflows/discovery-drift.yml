@@ -1,0 +1,41 @@
+name: discovery-drift
+
+# src/tools.js is a static copy of the hosted server's tools/list, served by
+# src/discovery.js to catalog scanners that run without network. Nothing ties
+# it to the server, so it drifts silently when the server adds or changes a
+# parameter. This job diffs it against the live tools/list: on pull requests
+# so an edit can't introduce drift, and weekly so server-side changes surface.
+# GitHub emails a failed scheduled run only to the user who last edited the
+# cron line; watch the Actions tab or this workflow's badge for drift.
+# Exit code 2 (server unreachable after retries) fails the job like drift does.
+
+on:
+  pull_request:
+    branches: [main]
+  # Commits pushed straight to main get checked too, not just pull requests.
+  push:
+    branches: [main]
+    paths: [src/tools.js, scripts/check-discovery.mjs, .github/workflows/discovery-drift.yml]
+  schedule:
+    # Mondays 07:00 UTC.
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: discovery-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Dependency-free script: no npm install needed.
+      - run: npm run check:discovery
