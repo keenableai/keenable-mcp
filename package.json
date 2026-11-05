@@ -9,7 +9,7 @@
     "keenable-mcp": "src/index.js"
   },
   "scripts": {
-    "check:discovery": "node scripts/check-discovery.mjs"
+    "check:discovery": "node scripts/check-discovery.mjs",
     "test": "node --test",
     "check:version": "node scripts/check-version.mjs",
     "prepublishOnly": "node scripts/check-version.mjs"
