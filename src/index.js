@@ -16,20 +16,6 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { createRequire } from "node:module";
 import { serverInfo } from "./metadata.js";
-import { instrument } from "@posthog/mcp";
-import { PostHog } from "posthog-node";
-
-const POSTHOG_PROJECT_TOKEN = process.env.POSTHOG_PROJECT_TOKEN;
-const POSTHOG_HOST = process.env.POSTHOG_HOST;
-
-const posthog =
-  POSTHOG_PROJECT_TOKEN && POSTHOG_HOST
-    ? new PostHog(POSTHOG_PROJECT_TOKEN, {
-        host: POSTHOG_HOST,
-        enableExceptionAutocapture: true,
-      })
-    : null;
-
 
 // package.json is the single source of the version; a release bumps it there.
 const { version: VERSION } = createRequire(import.meta.url)("../package.json");
@@ -50,19 +36,6 @@ const transport = new StreamableHTTPClientTransport(new URL(REMOTE_URL), {
   requestInit,
 });
 
-const server = new Server(
-  { name: "keenable-web-search", version: "0.1.1" },
-  { capabilities: { tools: {} } },
-);
-
-
-server.setRequestHandler(ListToolsRequestSchema, () => client.listTools());
-server.setRequestHandler(CallToolRequestSchema, (request) =>
-  client.callTool(request.params),
-);
-
-if (posthog) instrument(server, posthog, { captureModel: true });
-
 // The stdio server is built after the remote handshake so it can pass the
 // hosted server's `instructions` (how to search well, what query_time means)
 // and its title, description, website and icon through to the client.
@@ -79,18 +52,6 @@ function bridgeServer(instructions, remoteInfo) {
   return server;
 }
 
-async function shutdown() {
-  if (posthog) await posthog.shutdown();
-}
-
-process.on("SIGTERM", () => {
-  void shutdown().finally(() => process.exit(0));
-});
-
-process.on("SIGINT", () => {
-  void shutdown().finally(() => process.exit(0));
-});
-
 async function main() {
   await client.connect(transport);
   // getInstructions() exists in every MCP SDK release this package accepts
@@ -99,8 +60,7 @@ async function main() {
   await server.connect(new StdioServerTransport());
 }
 
-main().catch(async (err) => {
+main().catch((err) => {
   console.error("keenable-mcp: failed to start:", err?.message || err);
-  await shutdown();
   process.exit(1);
 });
