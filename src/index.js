@@ -14,6 +14,18 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { instrument } from "@posthog/mcp";
+import { PostHog } from "posthog-node";
+
+const POSTHOG_PROJECT_TOKEN = process.env.POSTHOG_PROJECT_TOKEN;
+const POSTHOG_HOST = process.env.POSTHOG_HOST;
+const posthog =
+  POSTHOG_PROJECT_TOKEN && POSTHOG_HOST
+    ? new PostHog(POSTHOG_PROJECT_TOKEN, {
+        host: POSTHOG_HOST,
+        enableExceptionAutocapture: true,
+      })
+    : null;
 
 const REMOTE_URL =
   process.env.KEENABLE_MCP_URL || "https://api.keenable.ai/mcp?keenable_title=npm";
@@ -36,17 +48,32 @@ const server = new Server(
   { capabilities: { tools: {} } },
 );
 
+if (posthog) instrument(server, posthog, { captureModel: true });
+
 server.setRequestHandler(ListToolsRequestSchema, () => client.listTools());
 server.setRequestHandler(CallToolRequestSchema, (request) =>
   client.callTool(request.params),
 );
+
+async function shutdown() {
+  if (posthog) await posthog.shutdown();
+}
+
+process.on("SIGTERM", () => {
+  void shutdown().finally(() => process.exit(0));
+});
+
+process.on("SIGINT", () => {
+  void shutdown().finally(() => process.exit(0));
+});
 
 async function main() {
   await client.connect(transport);
   await server.connect(new StdioServerTransport());
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error("keenable-mcp: failed to start:", err?.message || err);
+  await shutdown();
   process.exit(1);
 });
