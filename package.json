@@ -8,6 +8,11 @@
   "bin": {
     "keenable-mcp": "src/index.js"
   },
+  "scripts": {
+    "test": "node --test",
+    "check:version": "node scripts/check-version.mjs",
+    "prepublishOnly": "node scripts/check-version.mjs"
+  },
   "files": [
     "src",
     "server.json",

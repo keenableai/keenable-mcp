@@ -14,6 +14,11 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { createRequire } from "node:module";
+import { serverInfo } from "./metadata.js";
+
+// package.json is the single source of the version; a release bumps it there.
+const { version: VERSION } = createRequire(import.meta.url)("../package.json");
 
 const REMOTE_URL =
   process.env.KEENABLE_MCP_URL || "https://api.keenable.ai/mcp?keenable_title=npm";
@@ -23,7 +28,7 @@ const requestInit = {};
 if (API_KEY) requestInit.headers = { "X-API-Key": API_KEY };
 
 const client = new Client(
-  { name: "keenable-mcp", version: "0.1.1" },
+  { name: "keenable-mcp", version: VERSION },
   { capabilities: {} },
 );
 
@@ -31,18 +36,27 @@ const transport = new StreamableHTTPClientTransport(new URL(REMOTE_URL), {
   requestInit,
 });
 
-const server = new Server(
-  { name: "keenable-web-search", version: "0.1.1" },
-  { capabilities: { tools: {} } },
-);
-
-server.setRequestHandler(ListToolsRequestSchema, () => client.listTools());
-server.setRequestHandler(CallToolRequestSchema, (request) =>
-  client.callTool(request.params),
-);
+// The stdio server is built after the remote handshake so it can pass the
+// hosted server's `instructions` (how to search well, what query_time means)
+// and its title, description, website and icon through to the client.
+// Without them, npx users never see that guidance or branding.
+function bridgeServer(instructions, remoteInfo) {
+  const server = new Server(
+    serverInfo(VERSION, remoteInfo),
+    { capabilities: { tools: {} }, ...(instructions ? { instructions } : {}) },
+  );
+  server.setRequestHandler(ListToolsRequestSchema, () => client.listTools());
+  server.setRequestHandler(CallToolRequestSchema, (request) =>
+    client.callTool(request.params),
+  );
+  return server;
+}
 
 async function main() {
   await client.connect(transport);
+  // getInstructions() exists in every MCP SDK release this package accepts
+  // (^1.12.0); the optional call just keeps a broken install from crashing.
+  const server = bridgeServer(client.getInstructions?.(), client.getServerVersion?.());
   await server.connect(new StdioServerTransport());
 }
 
