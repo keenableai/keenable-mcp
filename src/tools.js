@@ -22,19 +22,19 @@ export const TOOLS = [
         },
         "acquired_after": {
           "type": "string",
-          "description": "Filter results to pages acquired/indexed after this date (YYYY-MM-DD)"
+          "description": "Keep only pages Keenable acquired (indexed) after this point. Accepts a date (YYYY-MM-DD), an ISO 8601 timestamp, or a relative offset back from the request time such as \"30min\", \"2h\", \"7d\", \"1mo\" or \"1y\"."
         },
         "acquired_before": {
           "type": "string",
-          "description": "Filter results to pages acquired/indexed before this date (YYYY-MM-DD)"
+          "description": "Keep only pages Keenable acquired (indexed) before this point. Accepts a date (YYYY-MM-DD), an ISO 8601 timestamp, or a relative offset back from the request time such as \"30min\", \"2h\", \"7d\", \"1mo\" or \"1y\"."
         },
         "published_after": {
           "type": "string",
-          "description": "Filter results to pages published after this date (YYYY-MM-DD), a lower bound on publish time. Use this, not query_time, to get recent results."
+          "description": "Keep only pages published after this point, a lower bound on publish time. Use this, not query_time, to get recent results: \"7d\" keeps the last 7 days. Accepts a date (YYYY-MM-DD), an ISO 8601 timestamp, or a relative offset back from the request time such as \"30min\", \"2h\", \"7d\", \"1mo\" or \"1y\"."
         },
         "published_before": {
           "type": "string",
-          "description": "Filter results to pages published before this date (YYYY-MM-DD)"
+          "description": "Keep only pages published before this point. Accepts a date (YYYY-MM-DD), an ISO 8601 timestamp, or a relative offset back from the request time such as \"30min\", \"2h\", \"7d\", \"1mo\" or \"1y\"."
         },
         "query_time": {
           "type": "string",
@@ -44,18 +44,18 @@ export const TOOLS = [
           "type": "integer",
           "minimum": 180,
           "maximum": 10000,
-          "description": "Maximum length (characters) of the snippet returned per result. When omitted, a default length is used."
+          "description": "How many characters of snippet text to return for each result. Raise it when you need more context per result without fetching the page; lower it to keep the response short. When omitted, a default length is used."
         },
         "max_results": {
           "type": "integer",
           "minimum": 1,
           "maximum": 50,
-          "description": "Maximum number of results to return. When omitted, a default count (10) is used."
+          "description": "How many results to return. Ask for more when surveying a topic broadly, fewer for a quick lookup. When omitted, 10 results are returned."
         },
         "session_id": {
           "type": "string",
           "maxLength": 128,
-          "description": "Optional id of the agent session making this call. Send the same value on every call in one session so its requests can be grouped."
+          "description": "Id of the agent session making this call. Send the same value on every call in one session so its requests can be grouped."
         },
         "output_format": {
           "type": "string",
@@ -64,7 +64,7 @@ export const TOOLS = [
             "json"
           ],
           "default": "text",
-          "description": "Response format: 'text' (default) for readable text, or 'json' for the raw response serialized as JSON."
+          "description": "Response format: 'text' for readable text, or 'json' for the raw response serialized as JSON when you need to parse fields programmatically."
         },
         "mode": {
           "type": "string",
@@ -105,22 +105,22 @@ export const TOOLS = [
         "max_chars": {
           "type": "integer",
           "minimum": 1,
-          "description": "Maximum number of characters of content to return. Longer content is truncated. Defaults to 50000 when omitted."
+          "description": "Character budget for the returned page content; anything beyond it is cut off. Lower it to save context on long pages. When omitted, up to 50000 characters are returned."
         },
         "live": {
           "type": "boolean",
           "default": false,
-          "description": "Fetch live content. Defaults to false."
+          "description": "Fetch the page live from the source instead of returning Keenable's indexed copy. Use it for pages that change often or URLs that are not indexed."
         },
         "prompt": {
           "type": "string",
           "maxLength": 2000,
-          "description": "Optional extraction instruction. When set, an LLM reads the fetched page and the returned content is only the output for this instruction instead of the full page. Example: \"List all pricing tiers with their monthly prices\"."
+          "description": "Extraction instruction for this page. When set, an LLM reads the fetched page and the returned content is only the output for this instruction instead of the full page; use it when you need one detail from a long page. Example: \"List all pricing tiers with their monthly prices\"."
         },
         "session_id": {
           "type": "string",
           "maxLength": 128,
-          "description": "Optional id of the agent session making this call. Send the same value on every call in one session so its requests can be grouped."
+          "description": "Id of the agent session making this call. Send the same value on every call in one session so its requests can be grouped."
         },
         "output_format": {
           "type": "string",
@@ -129,7 +129,7 @@ export const TOOLS = [
             "json"
           ],
           "default": "text",
-          "description": "Response format: 'text' (default) for readable text, or 'json' for the raw response serialized as JSON."
+          "description": "Response format: 'text' for readable text, or 'json' for the raw response serialized as JSON when you need to parse fields programmatically."
         }
       },
       "required": [
