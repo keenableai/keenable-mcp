@@ -25,6 +25,10 @@ covers `finance.yahoo.com`). Paths (`un.org/press`) and suffix or wildcard
 entries (`.gov`, `*.gov`) are not supported. Up to 50 distinct hosts in
 `include_domains` and 200 in `exclude_domains`. `site` cannot be combined with
 `include_domains`, and the same host cannot be in both lists.
+Private-section public suffixes (`blogspot.com`, `github.io`,
+`s3.amazonaws.com`) are accepted as hosts, ICANN suffixes and non-registrable
+names (`com`, `co.uk`, `localhost`) are rejected, and a leading `www.` is kept
+when the rest would be a public suffix (`www.github.io` stays as is).
 
 The hosted server is the validator; the npm wrapper passes these lists through
 unchanged. The server cleans up harmless noise for you (surrounding spaces,

@@ -81,6 +81,9 @@ trailing `/`, a leading `www.`, duplicates) and says so in a `Note:` line. It
 rejects anything else with an `invalid_filter` error that says how to fix the
 entry: a path, a `.gov`-style suffix or wildcard, an IP address, or a host with
 no registrable domain such as `localhost`.
+Hosts that are private-section public suffixes (`blogspot.com`, `github.io`,
+`s3.amazonaws.com`) are accepted, while `com`, `co.uk` and `localhost` are
+rejected; `www.` is kept when the rest is a public suffix (`www.github.io`).
 If the output starts with a `Note:` line, the API returned a `warning`: it
 normalized your entries, or the domain filter removed results (or dropped
 inline `site:` tokens), so the list may be shorter than usual or empty.
