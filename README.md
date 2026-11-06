@@ -19,18 +19,24 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 50000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`. |
 
 Use `site` for one site. Use `include_domains` (array) when results must come
-only from a set of sources (hosts like `example.com`, paths like
-`example.com/docs`, or suffixes like `.gov`), and `exclude_domains` to drop
-specific sites; exclude wins, and `site` cannot be combined with
-`include_domains`.
+only from a set of sites, and `exclude_domains` to drop sites. Every entry is a
+host such as `example.com`, and it also covers its subdomains (`yahoo.com`
+covers `finance.yahoo.com`). Paths (`un.org/press`) and suffix or wildcard
+entries (`.gov`, `*.gov`) are not supported. Up to 50 distinct hosts in
+`include_domains` and 200 in `exclude_domains`. `site` cannot be combined with
+`include_domains`, and the same host cannot be in both lists.
 
-The hosted server is the validator: the npm wrapper passes these lists through
-unchanged, and the skill script only trims and dedups them. A bad entry
-(scheme, port, IP literal, empty string), an empty `include_domains`, more than
-200 entries in total, or `site` together with `include_domains` comes back as
-an error from the server naming the field and entry. The skill script also
-refuses two flag mistakes before calling the server: `--site` together with
-`--include-domain`, and an `--include-domain` that holds no domain.
+The hosted server is the validator; the npm wrapper passes these lists through
+unchanged. The server cleans up harmless noise for you (surrounding spaces,
+case, an `http://` or `https://` scheme, a port, a trailing `/` or dot, a
+leading `www.`, duplicates) and says what it changed in the response warning.
+Anything else comes back as an `invalid_filter` error that names the field, the
+entry and how to fix it: a path, a suffix or wildcard, another scheme, a
+`user@` prefix, an IP address, an empty entry, an invalid hostname, a host
+without a registrable domain (`localhost`, `co.uk`), an empty
+`include_domains`, or too many hosts. The skill script also refuses two flag
+mistakes before calling the server: `--site` together with `--include-domain`,
+and an `--include-domain` that holds no domain.
 
 ## Use it
 

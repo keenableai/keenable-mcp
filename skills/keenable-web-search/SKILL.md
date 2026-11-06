@@ -66,19 +66,24 @@ web-fetch tool) before relying on a claim, and cite the source.
 | Flag | What it does |
 |------|-------------|
 | `--site <domain>` | Restrict the search to one site, e.g. `--site arxiv.org`. |
-| `--include-domain <domain>` | Only return results from these domains. Repeatable, and accepts comma lists: `--include-domain press.un.org,undocs.org --include-domain .gov`. Entries can be a host (`example.com`, includes subdomains), a host with a path prefix (`example.com/docs`), or a suffix (`.gov`). Cannot be combined with `--site`. |
-| `--exclude-domain <domain>` | Never return results from these domains (same forms, repeatable, comma lists). Exclude wins over include. |
+| `--include-domain <host>` | Only return results from these hosts. Repeatable, and accepts comma lists: `--include-domain un.org,undocs.org --include-domain who.int`. Each entry is a host such as `example.com` and also covers its subdomains (`yahoo.com` covers `finance.yahoo.com`). Paths (`un.org/press`) and suffixes (`.gov`, `*.gov`) are rejected. Up to 50 hosts. Cannot be combined with `--site`. |
+| `--exclude-domain <host>` | Never return results from these hosts and their subdomains (repeatable, comma lists). Up to 200 hosts. The same host cannot be in both lists. |
 | `--published-after` / `--published-before` | `YYYY-MM-DD` bounds on publish date, for time-sensitive research. |
 | `--acquired-after` / `--acquired-before` | `YYYY-MM-DD` bounds on when the page was indexed. |
 | `--json` | Raw JSON instead of formatted text. |
 
 Use `--site` for a single site. Use `--include-domain` when results must come
-only from a set of trusted sources (several sites, a path, or a suffix such as
-`.gov`). Use `--exclude-domain` to drop known-noisy sites from an otherwise open
-search. A narrow include list can return fewer results than usual.
-If the output starts with a `Note:` line, the API returned a `warning`: the
-domain filter removed results (or dropped inline `site:` tokens), so the list
-may be shorter than usual or empty.
+only from a set of trusted sites. Use `--exclude-domain` to drop known-noisy
+sites from an otherwise open search. A narrow include list can return fewer
+results than usual.
+The API cleans up harmless noise in entries (case, `https://`, a port, a
+trailing `/`, a leading `www.`, duplicates) and says so in a `Note:` line. It
+rejects anything else with an `invalid_filter` error that says how to fix the
+entry: a path, a `.gov`-style suffix or wildcard, an IP address, or a host with
+no registrable domain such as `localhost`.
+If the output starts with a `Note:` line, the API returned a `warning`: it
+normalized your entries, or the domain filter removed results (or dropped
+inline `site:` tokens), so the list may be shorter than usual or empty.
 
 ### Examples
 
@@ -90,9 +95,9 @@ python3 scripts/search.py "latest OpenAI model announcements"
 python3 scripts/search.py "diffusion models for inverse problems" \
   --site arxiv.org --published-after 2025-01-01
 
-# Only official sources: several domains plus a suffix
+# Only official sources: several hosts, each with its subdomains
 python3 scripts/search.py "UN Security Council resolution on maritime security" \
-  --include-domain press.un.org,undocs.org --include-domain .gov
+  --include-domain un.org,undocs.org --include-domain state.gov
 
 # Open search minus noisy sites
 python3 scripts/search.py "rust async runtime comparison" \

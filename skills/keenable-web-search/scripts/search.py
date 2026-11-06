@@ -3,7 +3,7 @@
 
 Usage:
   python3 search.py "your query" [--site arxiv.org]
-                     [--include-domain DOMAIN ...] [--exclude-domain DOMAIN ...]
+                     [--include-domain HOST ...] [--exclude-domain HOST ...]
                      [--published-after YYYY-MM-DD] [--published-before YYYY-MM-DD]
                      [--acquired-after YYYY-MM-DD] [--acquired-before YYYY-MM-DD]
                      [--json]
@@ -99,16 +99,18 @@ def parse_args(argv=None):
         "--include-domain",
         dest="include_domain",
         action="append",
-        metavar="DOMAIN",
-        help="Only return results from these domains. Repeatable; comma lists OK "
-        "(e.g. press.un.org,undocs.org or .gov). Not combinable with --site.",
+        metavar="HOST",
+        help="Only return results from these hosts and their subdomains. Repeatable; "
+        "comma lists OK (e.g. un.org,undocs.org). Hosts only: no paths or .gov "
+        "suffixes. Up to 50 hosts. Not combinable with --site.",
     )
     p.add_argument(
         "--exclude-domain",
         dest="exclude_domain",
         action="append",
-        metavar="DOMAIN",
-        help="Never return results from these domains. Repeatable; comma lists OK.",
+        metavar="HOST",
+        help="Never return results from these hosts and their subdomains. "
+        "Repeatable; comma lists OK. Up to 200 hosts.",
     )
     p.add_argument("--published-after", dest="published_after", help="YYYY-MM-DD")
     p.add_argument("--published-before", dest="published_before", help="YYYY-MM-DD")

@@ -23,7 +23,7 @@ That is the complete setup. On first run `npx` downloads `@keenable/mcp`, which
 connects to the hosted server at `https://api.keenable.ai/mcp` and exposes two
 tools:
 
-- `search_web_pages` — live web search. Required arg `query`; optional `mode` (`pro` or `realtime`), `site`, `include_domains` / `exclude_domains` (arrays of domains; exclude wins, not combinable with `site`), `published_after`/`published_before`, `acquired_after`/`acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards).
+- `search_web_pages` — live web search. Required arg `query`; optional `mode` (`pro` or `realtime`), `site`, `include_domains` / `exclude_domains` (arrays of hosts such as `example.com`, each covering its subdomains; no paths or `.gov`-style suffixes; up to 50 included and 200 excluded hosts; not combinable with `site`), `published_after`/`published_before`, `acquired_after`/`acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards).
 - `fetch_page_content` — fetch a URL and return clean markdown. Required arg `url`; optional `max_chars` (default 50000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`.
 
 ## Optional: API key

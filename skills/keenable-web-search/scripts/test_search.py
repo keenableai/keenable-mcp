@@ -19,8 +19,8 @@ class SplitDomainsTest(unittest.TestCase):
 
     def test_commas_whitespace_dedup_order(self):
         self.assertEqual(
-            search.split_domains(["a.com, b.com,,a.com", ".gov", " b.com "]),
-            ["a.com", "b.com", ".gov"],
+            search.split_domains(["a.com, b.com,,a.com", "who.int", " b.com "]),
+            ["a.com", "b.com", "who.int"],
         )
 
     def test_only_separators_gives_empty_list(self):
@@ -37,9 +37,9 @@ class BuildPayloadTest(unittest.TestCase):
 
     def test_lists_sent_as_arrays(self):
         payload = search.build_payload(
-            "q", include_domains=["press.un.org", "undocs.org"], exclude_domains=["x.com"]
+            "q", include_domains=["un.org", "undocs.org"], exclude_domains=["x.com"]
         )
-        self.assertEqual(payload["include_domains"], ["press.un.org", "undocs.org"])
+        self.assertEqual(payload["include_domains"], ["un.org", "undocs.org"])
         self.assertEqual(payload["exclude_domains"], ["x.com"])
 
     def test_every_filter_passed_through(self):
@@ -63,11 +63,23 @@ class ParseArgsTest(unittest.TestCase):
 
     def test_repeatable_and_comma_lists(self):
         _, inc, exc = search.parse_args(
-            ["q", "--include-domain", "a.com,b.com", "--include-domain", ".gov",
+            ["q", "--include-domain", "a.com,b.com", "--include-domain", "who.int",
              "--exclude-domain", "c.com"]
         )
-        self.assertEqual(inc, ["a.com", "b.com", ".gov"])
+        self.assertEqual(inc, ["a.com", "b.com", "who.int"])
         self.assertEqual(exc, ["c.com"])
+
+    def test_help_states_host_only_contract_and_limits(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            with self.assertRaises(SystemExit):
+                search.parse_args(["--help"])
+        text = " ".join(out.getvalue().split())
+        self.assertIn("hosts and their subdomains", text)
+        self.assertIn("no paths or .gov suffixes", text)
+        self.assertIn("Up to 50 hosts", text)
+        self.assertIn("Up to 200 hosts", text)
+        self.assertNotIn("press.un.org", text)
 
     def test_errors(self):
         cases = [
@@ -154,7 +166,7 @@ class RequestTest(unittest.TestCase):
 
     def test_body_and_headers(self):
         sent, _ = self._run([
-            "two", "words", "--include-domain", "a.com,b.com", "--include-domain", ".gov",
+            "two", "words", "--include-domain", "a.com,b.com", "--include-domain", "who.int",
             "--exclude-domain", "c.com", "--published-after", "2024-01-01",
             "--published-before", "2024-12-31", "--acquired-after", "2023-01-01",
             "--acquired-before", "2025-01-01",
@@ -168,7 +180,7 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(json.loads(req.data), {
             "query": "two words",
             "mode": "pro",
-            "include_domains": ["a.com", "b.com", ".gov"],
+            "include_domains": ["a.com", "b.com", "who.int"],
             "exclude_domains": ["c.com"],
             "published_after": "2024-01-01",
             "published_before": "2024-12-31",
