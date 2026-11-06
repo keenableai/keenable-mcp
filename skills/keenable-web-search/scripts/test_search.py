@@ -32,15 +32,12 @@ class BuildPayloadTest(unittest.TestCase):
         self.assertEqual(search.build_payload("q"), {"query": "q", "mode": "pro"})
 
     def test_empty_lists_are_omitted(self):
-        payload = search.build_payload("q", include_domains=[], exclude_domains=[], site=None)
+        payload = search.build_payload("q", exclude_domains=[], site=None)
         self.assertEqual(payload, {"query": "q", "mode": "pro"})
 
-    def test_lists_sent_as_arrays(self):
-        payload = search.build_payload(
-            "q", include_domains=["un.org", "undocs.org"], exclude_domains=["x.com"]
-        )
-        self.assertEqual(payload["include_domains"], ["un.org", "undocs.org"])
-        self.assertEqual(payload["exclude_domains"], ["x.com"])
+    def test_list_sent_as_array(self):
+        payload = search.build_payload("q", exclude_domains=["x.com", "y.com"])
+        self.assertEqual(payload["exclude_domains"], ["x.com", "y.com"])
 
     def test_every_filter_passed_through(self):
         filters = {k: f"v-{k}" for k in search._PARAMS}
@@ -48,26 +45,17 @@ class BuildPayloadTest(unittest.TestCase):
         self.assertEqual(payload, {"query": "q", "mode": "pro", **filters})
         self.assertEqual(
             set(search._PARAMS),
-            {"site", "include_domains", "exclude_domains", "published_after",
+            {"site", "exclude_domains", "published_after",
              "published_before", "acquired_after", "acquired_before"},
         )
 
 
 class ParseArgsTest(unittest.TestCase):
-    def _error(self, argv):
-        err = io.StringIO()
-        with contextlib.redirect_stderr(err):
-            with self.assertRaises(SystemExit) as cm:
-                search.parse_args(argv)
-        return cm.exception.code, err.getvalue()
-
     def test_repeatable_and_comma_lists(self):
-        _, inc, exc = search.parse_args(
-            ["q", "--include-domain", "a.com,b.com", "--include-domain", "who.int",
-             "--exclude-domain", "c.com"]
+        _, exc = search.parse_args(
+            ["q", "--exclude-domain", "a.com,b.com", "--exclude-domain", "who.int"]
         )
-        self.assertEqual(inc, ["a.com", "b.com", "who.int"])
-        self.assertEqual(exc, ["c.com"])
+        self.assertEqual(exc, ["a.com", "b.com", "who.int"])
 
     def test_help_states_host_only_contract_and_limits(self):
         out = io.StringIO()
@@ -77,34 +65,17 @@ class ParseArgsTest(unittest.TestCase):
         text = " ".join(out.getvalue().split())
         self.assertIn("hosts and their subdomains", text)
         self.assertIn("no paths or .gov suffixes", text)
-        self.assertIn("Up to 50 hosts", text)
-        self.assertIn("Up to 200 hosts", text)
-        self.assertNotIn("press.un.org", text)
-
-    def test_errors(self):
-        cases = [
-            (["q", "--include-domain", " , "], "--include-domain needs at least one domain"),
-            (["q", "--site", "a.com", "--include-domain", "b.com"],
-             "--site cannot be combined with --include-domain"),
-            (["q", "--site", "a.com", "--include-domain", " , "],
-             "--include-domain needs at least one domain"),
-        ]
-        for argv, message in cases:
-            with self.subTest(argv=argv):
-                code, err = self._error(argv)
-                self.assertEqual(code, 2)
-                self.assertIn(message, err)
+        self.assertIn("Up to 1,000 hosts", text)
 
     def test_allowed_combinations(self):
         cases = [
-            (["q", "--site", "a.com", "--exclude-domain", "b.com"], [], ["b.com"]),
-            (["q", "--exclude-domain", " , "], [], []),
-            (["q", "--include-domain", "a.com", "--exclude-domain", "a.com"], ["a.com"], ["a.com"]),
+            (["q", "--site", "a.com", "--exclude-domain", "b.com"], ["b.com"]),
+            (["q", "--exclude-domain", " , "], []),
         ]
-        for argv, want_inc, want_exc in cases:
+        for argv, want_exc in cases:
             with self.subTest(argv=argv):
-                _, inc, exc = search.parse_args(argv)
-                self.assertEqual((inc, exc), (want_inc, want_exc))
+                _, exc = search.parse_args(argv)
+                self.assertEqual(exc, want_exc)
 
 
 class FormatResultsTest(unittest.TestCase):
@@ -166,8 +137,8 @@ class RequestTest(unittest.TestCase):
 
     def test_body_and_headers(self):
         sent, _ = self._run([
-            "two", "words", "--include-domain", "a.com,b.com", "--include-domain", "who.int",
-            "--exclude-domain", "c.com", "--published-after", "2024-01-01",
+            "two", "words", "--exclude-domain", "a.com,b.com", "--exclude-domain", "who.int",
+            "--published-after", "2024-01-01",
             "--published-before", "2024-12-31", "--acquired-after", "2023-01-01",
             "--acquired-before", "2025-01-01",
         ])
@@ -180,8 +151,7 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(json.loads(req.data), {
             "query": "two words",
             "mode": "pro",
-            "include_domains": ["a.com", "b.com", "who.int"],
-            "exclude_domains": ["c.com"],
+            "exclude_domains": ["a.com", "b.com", "who.int"],
             "published_after": "2024-01-01",
             "published_before": "2024-12-31",
             "acquired_after": "2023-01-01",

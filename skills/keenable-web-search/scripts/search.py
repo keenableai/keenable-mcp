@@ -3,7 +3,7 @@
 
 Usage:
   python3 search.py "your query" [--site arxiv.org]
-                     [--include-domain HOST ...] [--exclude-domain HOST ...]
+                     [--exclude-domain HOST ...]
                      [--published-after YYYY-MM-DD] [--published-before YYYY-MM-DD]
                      [--acquired-after YYYY-MM-DD] [--acquired-before YYYY-MM-DD]
                      [--json]
@@ -22,7 +22,6 @@ APP_TITLE = "OpenClaw Skill"  # attribution tag for keyless traffic (X-Keenable-
 
 _PARAMS = (
     "site",
-    "include_domains",
     "exclude_domains",
     "published_after",
     "published_before",
@@ -96,21 +95,13 @@ def parse_args(argv=None):
     p.add_argument("query", nargs="+", help="Natural-language search query")
     p.add_argument("--site", help="Restrict to one site, e.g. arxiv.org")
     p.add_argument(
-        "--include-domain",
-        dest="include_domain",
-        action="append",
-        metavar="HOST",
-        help="Only return results from these hosts and their subdomains. Repeatable; "
-        "comma lists OK (e.g. un.org,undocs.org). Hosts only: no paths or .gov "
-        "suffixes. Up to 50 hosts. Not combinable with --site.",
-    )
-    p.add_argument(
         "--exclude-domain",
         dest="exclude_domain",
         action="append",
         metavar="HOST",
         help="Never return results from these hosts and their subdomains. "
-        "Repeatable; comma lists OK. Up to 200 hosts.",
+        "Repeatable; comma lists OK (e.g. pinterest.com,quora.com). Hosts only: "
+        "no paths or .gov suffixes. Up to 1,000 hosts.",
     )
     p.add_argument("--published-after", dest="published_after", help="YYYY-MM-DD")
     p.add_argument("--published-before", dest="published_before", help="YYYY-MM-DD")
@@ -118,23 +109,14 @@ def parse_args(argv=None):
     p.add_argument("--acquired-before", dest="acquired_before", help="YYYY-MM-DD")
     p.add_argument("-j", "--json", action="store_true", help="Output raw JSON")
     args = p.parse_args(argv)
-
-    include_domains = split_domains(args.include_domain)
-    exclude_domains = split_domains(args.exclude_domain)
-    if args.site and include_domains:
-        p.error("--site cannot be combined with --include-domain; "
-                "add the site to --include-domain instead")
-    if args.include_domain is not None and not include_domains:
-        p.error("--include-domain needs at least one domain")
-    return args, include_domains, exclude_domains
+    return args, split_domains(args.exclude_domain)
 
 
 def main(argv=None):
-    args, include_domains, exclude_domains = parse_args(argv)
+    args, exclude_domains = parse_args(argv)
     data = search(
         " ".join(args.query),
         site=args.site,
-        include_domains=include_domains,
         exclude_domains=exclude_domains,
         published_after=args.published_after,
         published_before=args.published_before,
