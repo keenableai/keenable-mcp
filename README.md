@@ -15,8 +15,21 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 
 | Tool | Description |
 |---|---|
-| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`), `site`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
+| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 50000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`. |
+
+Use `site` for one site and `exclude_domains` (array) to drop sites from the
+results. Every entry is a host such as `example.com`, and it also covers its
+subdomains (`yahoo.com` covers `finance.yahoo.com`). Up to 1,000 distinct
+hosts. Hosts such as `github.io` or `blogspot.com` are accepted. If every
+result is excluded, the response can be empty.
+
+The hosted server is the validator; the npm wrapper passes the list through
+unchanged. The server cleans up unambiguous input for you (surrounding spaces,
+case, a scheme, a leading `www.`, a port, a trailing `/`, a query string).
+Anything else comes back as a 400 `invalid_filter` error with `field`, `value`
+and `reason`: a path, a `.com`-style suffix, a wildcard, an IP address, a
+`user@` prefix, or an invalid host.
 
 ## Use it
 
