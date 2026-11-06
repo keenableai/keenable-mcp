@@ -29,6 +29,19 @@ test("descriptions point to include_domains and exclude_domains", () => {
   assert.match(props.include_domains.description, /site/);
 });
 
+test("domain descriptions state the V1 host-only contract and limits", () => {
+  const props = search.inputSchema.properties;
+  assert.match(props.include_domains.description, /hosts/);
+  assert.match(props.include_domains.description, /subdomains/);
+  assert.match(props.include_domains.description, /Up to 50 distinct hosts/);
+  assert.match(props.include_domains.description, /paths and suffixes like "\.gov" are rejected/);
+  assert.match(props.exclude_domains.description, /Up to 200 distinct hosts/);
+  assert.match(props.exclude_domains.description, /same host in both lists is rejected/);
+  for (const name of ["include_domains", "exclude_domains"]) {
+    assert.doesNotMatch(props[name].description, /path prefix|\(suffix\)|example\.com\/docs/);
+  }
+});
+
 test("discovery.js imports only names that tools.js exports", async () => {
   const src = await readFile(new URL("../src/discovery.js", import.meta.url), "utf8");
   const imports = [...src.matchAll(/import\s*\{([^}]*)\}\s*from\s*"\.\/tools\.js"/g)];

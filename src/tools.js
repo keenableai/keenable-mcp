@@ -25,14 +25,14 @@ export const TOOLS = [
           "items": {
             "type": "string"
           },
-          "description": "Return results only from these domains. Entries: \"example.com\" (and its subdomains), \"example.com/docs\" (path prefix), \".gov\" (suffix). Up to 200 distinct entries with exclude_domains; do not combine with site."
+          "description": "Return results only from these hosts. Each entry is a host such as \"example.com\" and also covers its subdomains; paths and suffixes like \".gov\" are rejected. Up to 50 distinct hosts; do not combine with site."
         },
         "exclude_domains": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Never return results from these domains. Same entry forms as include_domains; wins where the lists overlap, but the same entry in both lists is rejected."
+          "description": "Never return results from these hosts or their subdomains. Same host form as include_domains. Up to 200 distinct hosts; the same host in both lists is rejected."
         },
         "acquired_after": {
           "type": "string",
