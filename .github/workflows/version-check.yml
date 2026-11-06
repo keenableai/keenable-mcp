@@ -1,0 +1,27 @@
+name: version-check
+
+# package.json is the single source of the npm version; server.json must name
+# the same version for the MCP Registry. prepublishOnly catches a mismatch at
+# publish time; this catches it when it lands, so main never carries one.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths: [package.json, server.json, scripts/check-version.mjs]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+      # Dependency-free script: no npm install needed.
+      - run: npm run check:version

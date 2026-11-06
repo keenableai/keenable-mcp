@@ -15,8 +15,8 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 
 | Tool | Description |
 |---|---|
-| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode`, `site`, `include_domains` / `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`. |
-| `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 50000). |
+| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`), `site`, `include_domains` / `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
+| `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 50000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`. |
 
 Use `site` for one site. Use `include_domains` (array) when results must come
 only from a set of sources (hosts like `example.com`, paths like
@@ -108,7 +108,28 @@ search logic in this package; the index and tools live behind
 `https://api.keenable.ai/mcp`. Environment variables:
 
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
-- `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp`).
+- `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`).
+
+## Development
+
+```sh
+npm install
+npm test
+```
+
+`npm test` runs the unit tests and a stdio smoke test of the discovery build
+(`src/discovery.js`): `initialize` must advertise the server metadata and
+`tools/list` must return both tools. CI runs it on Node 18, 20 and 22 and on
+the oldest MCP SDK the package accepts.
+
+## Releasing
+
+The npm version lives only in `package.json`; the bridge reads it at runtime.
+`server.json` (the MCP Registry manifest) must repeat it as a literal in
+`packages[].version`, so bump both. `npm run check:version` compares them and
+runs automatically before `npm publish`. The top-level `server.json` `version`
+is the registry entry's own version and is bumped whenever `server.json`
+changes.
 
 ## Links
 
