@@ -10,40 +10,25 @@ test("search_web_pages keeps site as a string", () => {
   assert.equal(search.inputSchema.properties.site.type, "string");
 });
 
-for (const name of ["include_domains", "exclude_domains"]) {
-  test(`search_web_pages declares ${name} as an array of strings`, () => {
-    const prop = search.inputSchema.properties[name];
-    assert.ok(prop, `${name} missing`);
-    assert.equal(prop.type, "array");
-    assert.deepEqual(prop.items, { type: "string" });
-    assert.ok(prop.description.length > 0);
-    assert.equal("default" in prop, false);
-  });
-}
-
-test("descriptions point to include_domains and exclude_domains", () => {
-  const props = search.inputSchema.properties;
-  assert.match(search.description, /include_domains/);
-  assert.match(search.description, /exclude_domains/);
-  assert.match(props.site.description, /include_domains/);
-  assert.match(props.include_domains.description, /site/);
+test("search_web_pages declares exclude_domains as an array of strings", () => {
+  const prop = search.inputSchema.properties.exclude_domains;
+  assert.ok(prop, "exclude_domains missing");
+  assert.equal(prop.type, "array");
+  assert.deepEqual(prop.items, { type: "string" });
+  assert.equal("default" in prop, false);
 });
 
-test("domain descriptions state the V1 host-only contract and limits", () => {
-  const props = search.inputSchema.properties;
-  assert.match(props.include_domains.description, /host names/);
-  assert.match(props.include_domains.description, /subdomains/);
-  assert.match(props.include_domains.description, /up to 50 hosts/);
-  assert.match(props.include_domains.description, /No paths/);
-  assert.match(props.include_domains.description, /suffixes such as "\.gov", or wildcards/);
-  assert.match(props.include_domains.description, /Private suffixes such as "github\.io" are accepted as hosts/);
-  assert.match(props.include_domains.description, /"com", "co\.uk" and "localhost" are rejected/);
-  assert.match(props.include_domains.description, /kept in "www\.github\.io"/);
-  assert.match(props.exclude_domains.description, /up to 200 hosts/);
-  assert.match(props.exclude_domains.description, /A host in both lists is rejected/);
-  for (const name of ["include_domains", "exclude_domains"]) {
-    assert.doesNotMatch(props[name].description, /path prefix|\(suffix\)/);
-  }
+test("tool description points to exclude_domains", () => {
+  assert.match(search.description, /exclude_domains/);
+});
+
+test("exclude_domains description states the host-only contract and limit", () => {
+  const desc = search.inputSchema.properties.exclude_domains.description;
+  assert.match(desc, /host names/);
+  assert.match(desc, /subdomains/);
+  assert.match(desc, /up to 1,000 hosts/);
+  assert.match(desc, /No paths/);
+  assert.match(desc, /wildcards/);
 });
 
 test("discovery.js imports only names that tools.js exports", async () => {
@@ -56,7 +41,7 @@ test("discovery.js imports only names that tools.js exports", async () => {
   assert.match(src, /\{ tools: TOOLS \}/);
 });
 
-test("domain lists stay optional; only query is required", () => {
+test("exclude_domains stays optional; only query is required", () => {
   assert.deepEqual(search.inputSchema.required, ["query"]);
 });
 
