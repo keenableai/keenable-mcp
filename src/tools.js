@@ -25,14 +25,14 @@ export const TOOLS = [
           "items": {
             "type": "string"
           },
-          "description": "Return results only from these hosts. Each entry is a host such as \"example.com\" and also covers its subdomains; paths and suffixes like \".gov\" are rejected. Up to 50 distinct hosts; do not combine with site."
+          "description": "Return results only from these sites. Entries are host names such as \"example.com\", which also covers its subdomains; up to 50 hosts. No paths (\"example.com/docs\"), suffixes such as \".gov\", or wildcards. Private suffixes such as \"github.io\" are accepted as hosts; \"com\", \"co.uk\" and \"localhost\" are rejected. A scheme, a leading \"www.\" (kept in \"www.github.io\") or a trailing \"/\" is cleaned up for you. Do not combine with site."
         },
         "exclude_domains": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Never return results from these hosts or their subdomains. Same host form as include_domains. Up to 200 distinct hosts; the same host in both lists is rejected."
+          "description": "Never return results from these sites. Host names as in include_domains, each covering its subdomains; up to 200 hosts. A host in both lists is rejected."
         },
         "acquired_after": {
           "type": "string",

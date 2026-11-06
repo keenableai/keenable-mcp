@@ -31,14 +31,18 @@ test("descriptions point to include_domains and exclude_domains", () => {
 
 test("domain descriptions state the V1 host-only contract and limits", () => {
   const props = search.inputSchema.properties;
-  assert.match(props.include_domains.description, /hosts/);
+  assert.match(props.include_domains.description, /host names/);
   assert.match(props.include_domains.description, /subdomains/);
-  assert.match(props.include_domains.description, /Up to 50 distinct hosts/);
-  assert.match(props.include_domains.description, /paths and suffixes like "\.gov" are rejected/);
-  assert.match(props.exclude_domains.description, /Up to 200 distinct hosts/);
-  assert.match(props.exclude_domains.description, /same host in both lists is rejected/);
+  assert.match(props.include_domains.description, /up to 50 hosts/);
+  assert.match(props.include_domains.description, /No paths/);
+  assert.match(props.include_domains.description, /suffixes such as "\.gov", or wildcards/);
+  assert.match(props.include_domains.description, /Private suffixes such as "github\.io" are accepted as hosts/);
+  assert.match(props.include_domains.description, /"com", "co\.uk" and "localhost" are rejected/);
+  assert.match(props.include_domains.description, /kept in "www\.github\.io"/);
+  assert.match(props.exclude_domains.description, /up to 200 hosts/);
+  assert.match(props.exclude_domains.description, /A host in both lists is rejected/);
   for (const name of ["include_domains", "exclude_domains"]) {
-    assert.doesNotMatch(props[name].description, /path prefix|\(suffix\)|example\.com\/docs/);
+    assert.doesNotMatch(props[name].description, /path prefix|\(suffix\)/);
   }
 });
 
