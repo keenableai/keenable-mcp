@@ -66,27 +66,21 @@ web-fetch tool) before relying on a claim, and cite the source.
 | Flag | What it does |
 |------|-------------|
 | `--site <domain>` | Restrict the search to one site, e.g. `--site arxiv.org`. |
-| `--include-domain <host>` | Only return results from these hosts. Repeatable, and accepts comma lists: `--include-domain un.org,undocs.org --include-domain who.int`. Each entry is a host such as `example.com` and also covers its subdomains (`yahoo.com` covers `finance.yahoo.com`). Paths (`un.org/press`) and suffixes (`.gov`, `*.gov`) are rejected. Up to 50 hosts. Cannot be combined with `--site`. |
-| `--exclude-domain <host>` | Never return results from these hosts and their subdomains (repeatable, comma lists). Up to 200 hosts. The same host cannot be in both lists. |
+| `--exclude-domain <host>` | Never return results from these hosts. Repeatable, and accepts comma lists: `--exclude-domain pinterest.com,quora.com --exclude-domain reddit.com`. Each entry is a host such as `example.com` and also covers its subdomains (`yahoo.com` covers `finance.yahoo.com`). Paths (`un.org/press`), suffixes (`.com`) and wildcards are rejected. Up to 1,000 hosts. |
 | `--published-after` / `--published-before` | `YYYY-MM-DD` bounds on publish date, for time-sensitive research. |
 | `--acquired-after` / `--acquired-before` | `YYYY-MM-DD` bounds on when the page was indexed. |
 | `--json` | Raw JSON instead of formatted text. |
 
-Use `--site` for a single site. Use `--include-domain` when results must come
-only from a set of trusted sites. Use `--exclude-domain` to drop known-noisy
-sites from an otherwise open search. A narrow include list can return fewer
-results than usual.
-The API cleans up harmless noise in entries (case, `https://`, a port, a
-trailing `/`, a leading `www.`, duplicates) and says so in a `Note:` line. It
-rejects anything else with an `invalid_filter` error that says how to fix the
-entry: a path, a `.gov`-style suffix or wildcard, an IP address, or a host with
-no registrable domain such as `localhost`.
-Hosts that are private-section public suffixes (`blogspot.com`, `github.io`,
-`s3.amazonaws.com`) are accepted, while `com`, `co.uk` and `localhost` are
-rejected; `www.` is kept when the rest is a public suffix (`www.github.io`).
-If the output starts with a `Note:` line, the API returned a `warning`: it
-normalized your entries, or the domain filter removed results (or dropped
-inline `site:` tokens), so the list may be shorter than usual or empty.
+Use `--site` for a single site. Use `--exclude-domain` to drop known-noisy
+sites from an otherwise open search. Hosts such as `github.io` or
+`blogspot.com` are accepted.
+The API cleans up unambiguous input (case, a scheme, a leading `www.`, a port,
+a trailing `/`, a query string). It rejects anything else with a 400
+`invalid_filter` error naming the field, the value and the reason: a path, a
+`.com`-style suffix, a wildcard, an IP address, a `user@` prefix, or an invalid
+host. If every result is excluded, the output can be empty.
+If the output starts with a `Note:` line, the API returned a `warning`; read it
+before relying on the results.
 
 ### Examples
 
@@ -97,10 +91,6 @@ python3 scripts/search.py "latest OpenAI model announcements"
 # Research papers from one site, recent only
 python3 scripts/search.py "diffusion models for inverse problems" \
   --site arxiv.org --published-after 2025-01-01
-
-# Only official sources: several hosts, each with its subdomains
-python3 scripts/search.py "UN Security Council resolution on maritime security" \
-  --include-domain un.org,undocs.org --include-domain state.gov
 
 # Open search minus noisy sites
 python3 scripts/search.py "rust async runtime comparison" \

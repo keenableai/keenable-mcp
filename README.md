@@ -15,32 +15,21 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 
 | Tool | Description |
 |---|---|
-| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`), `site`, `include_domains` / `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
+| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 50000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`. |
 
-Use `site` for one site. Use `include_domains` (array) when results must come
-only from a set of sites, and `exclude_domains` to drop sites. Every entry is a
-host such as `example.com`, and it also covers its subdomains (`yahoo.com`
-covers `finance.yahoo.com`). Paths (`un.org/press`) and suffix or wildcard
-entries (`.gov`, `*.gov`) are not supported. Up to 50 distinct hosts in
-`include_domains` and 200 in `exclude_domains`. `site` cannot be combined with
-`include_domains`, and the same host cannot be in both lists.
-Private-section public suffixes (`blogspot.com`, `github.io`,
-`s3.amazonaws.com`) are accepted as hosts, ICANN suffixes and non-registrable
-names (`com`, `co.uk`, `localhost`) are rejected, and a leading `www.` is kept
-when the rest would be a public suffix (`www.github.io` stays as is).
+Use `site` for one site and `exclude_domains` (array) to drop sites from the
+results. Every entry is a host such as `example.com`, and it also covers its
+subdomains (`yahoo.com` covers `finance.yahoo.com`). Up to 1,000 distinct
+hosts. Hosts such as `github.io` or `blogspot.com` are accepted. If every
+result is excluded, the response can be empty.
 
-The hosted server is the validator; the npm wrapper passes these lists through
-unchanged. The server cleans up harmless noise for you (surrounding spaces,
-case, an `http://` or `https://` scheme, a port, a trailing `/` or dot, a
-leading `www.`, duplicates) and says what it changed in the response warning.
-Anything else comes back as an `invalid_filter` error that names the field, the
-entry and how to fix it: a path, a suffix or wildcard, another scheme, a
-`user@` prefix, an IP address, an empty entry, an invalid hostname, a host
-without a registrable domain (`localhost`, `co.uk`), an empty
-`include_domains`, or too many hosts. The skill script also refuses two flag
-mistakes before calling the server: `--site` together with `--include-domain`,
-and an `--include-domain` that holds no domain.
+The hosted server is the validator; the npm wrapper passes the list through
+unchanged. The server cleans up unambiguous input for you (surrounding spaces,
+case, a scheme, a leading `www.`, a port, a trailing `/`, a query string).
+Anything else comes back as a 400 `invalid_filter` error with `field`, `value`
+and `reason`: a path, a `.com`-style suffix, a wildcard, an IP address, a
+`user@` prefix, or an invalid host.
 
 ## Use it
 

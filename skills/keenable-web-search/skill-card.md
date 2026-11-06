@@ -11,7 +11,7 @@ MIT <br>
 
 
 ## Use Case: <br>
-Agents run the bundled script to perform natural-language web search and research — finding current, citable information beyond the model's training data: news and current events, research papers, documentation, company and market research, and fact-checking, with optional site, domain allow/block-list, and date filters. <br>
+Agents run the bundled script to perform natural-language web search and research — finding current, citable information beyond the model's training data: news and current events, research papers, documentation, company and market research, and fact-checking, with optional site, domain block-list, and date filters. <br>
 
 ### Deployment Geography for Use: <br>
 Global <br>
