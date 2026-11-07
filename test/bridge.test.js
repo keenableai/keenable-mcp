@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 
-const KEY = "keen_bridge_test_key_abcdef";
+const KEY = `keen_${"y".repeat(24)}`;
 const REMOTE_TOOLS = [
   { name: "search_web_pages", description: "search", inputSchema: { type: "object", properties: {} } },
   { name: "fetch_page_content", description: "fetch", inputSchema: { type: "object", properties: {} } },

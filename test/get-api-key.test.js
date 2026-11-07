@@ -9,7 +9,7 @@ import {
   getApiKeyEnabled,
 } from "../src/get-api-key.js";
 
-const KEY = "keen_secret_test_key_0123456789";
+const KEY = `keen_${"x".repeat(24)}`;
 const CODE = {
   agent_code: "agent-code-1",
   user_code: "ABCD-EFGH",
