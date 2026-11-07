@@ -95,6 +95,12 @@ search logic in this package; the index and tools live behind
 
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
 - `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`).
+- `KEENABLE_GET_API_KEY` — set to `1` to add a local `get_api_key` tool (off by
+  default; ignored when `KEENABLE_API_KEY` is set). It runs the agent device
+  flow: it returns a link and code for the agent to show its user, and once
+  the user approves, the rest of the session sends the new key. The key is never
+  shown in tool output. See
+  [Get a key](https://docs.keenable.ai/authentication#device-flow).
 
 ## Development
 
