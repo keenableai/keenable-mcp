@@ -10,12 +10,10 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import {
-  ListToolsRequestSchema,
-  CallToolRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
 import { createRequire } from "node:module";
 import { serverInfo } from "./metadata.js";
+import { registerBridgeHandlers } from "./bridge.js";
+import { apiOriginFrom, createApiKeyFlow, getApiKeyEnabled } from "./get-api-key.js";
 
 // package.json is the single source of the version; a release bumps it there.
 const { version: VERSION } = createRequire(import.meta.url)("../package.json");
@@ -32,6 +30,18 @@ const client = new Client(
   { capabilities: {} },
 );
 
+// The transport reads requestInit.headers on every request, so a key set
+// here by get_api_key applies to the next call.
+const getApiKey =
+  getApiKeyEnabled(process.env) && !API_KEY
+    ? createApiKeyFlow({
+        apiOrigin: apiOriginFrom(REMOTE_URL),
+        onApiKey: (key) => {
+          requestInit.headers = { ...requestInit.headers, "X-API-Key": key };
+        },
+      })
+    : undefined;
+
 const transport = new StreamableHTTPClientTransport(new URL(REMOTE_URL), {
   requestInit,
 });
@@ -45,10 +55,7 @@ function bridgeServer(instructions, remoteInfo) {
     serverInfo(VERSION, remoteInfo),
     { capabilities: { tools: {} }, ...(instructions ? { instructions } : {}) },
   );
-  server.setRequestHandler(ListToolsRequestSchema, () => client.listTools());
-  server.setRequestHandler(CallToolRequestSchema, (request) =>
-    client.callTool(request.params),
-  );
+  registerBridgeHandlers(server, client, { getApiKey });
   return server;
 }
 

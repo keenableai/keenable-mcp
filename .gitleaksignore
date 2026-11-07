@@ -1,0 +1,7 @@
+# Findings reviewed and recorded as false positives. One line per decision, by
+# fingerprint (commit:path:rule:line); see .gitleaks.toml. Add a line only with
+# the reason beside it.
+
+# A made-up test fixture key in the first commit of the get_api_key PR; the
+# next commit replaced it with a generated value.
+46346d9c328b6323ceb96f5559d3e332f24c66da:test/get-api-key.test.js:generic-api-key:12
