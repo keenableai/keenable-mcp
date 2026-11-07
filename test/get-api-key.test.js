@@ -140,6 +140,43 @@ test("expired_token tells the agent to call get_api_key again", async () => {
   assert.equal(flow.status, "idle");
 });
 
+test("expired_token after a poll network error says a key may already exist", async () => {
+  const { flow, keys } = harness({
+    tokens: [
+      () => {
+        throw new TypeError("fetch failed");
+      },
+      () => jsonResponse(200, { error: "expired_token" }),
+    ],
+  });
+  await flow.call();
+  await flow.settled;
+  const result = await flow.call();
+  assert.equal(result.isError, true);
+  assert.match(textOf(result), /may already have approved/);
+  assert.match(textOf(result), /a key named host-mcp may already exist in the console/);
+  assert.match(textOf(result), /Next step: call get_api_key again/);
+  assert.match(textOf(result), /\(code: expired_token\)/);
+  assert.deepEqual(keys, []);
+  assert.equal(flow.status, "idle");
+});
+
+test("expired_token after a poll timeout says a key may already exist", async () => {
+  const { flow } = harness({
+    tokens: [
+      () => {
+        throw new DOMException("The operation timed out.", "TimeoutError");
+      },
+      pending,
+      () => jsonResponse(200, { error: "expired_token" }),
+    ],
+  });
+  await flow.call();
+  await flow.settled;
+  const result = await flow.call();
+  assert.match(textOf(result), /a key named host-mcp may already exist in the console/);
+});
+
 test("access_denied tells the agent the user declined and to continue keyless", async () => {
   const { flow, keys } = harness({ tokens: [() => jsonResponse(200, { error: "access_denied" })] });
   await flow.call();
@@ -159,9 +196,10 @@ test("the poll gives up after 10 minutes with a show-the-link-again step", async
   assert.ok(elapsed() >= 10 * 60_000 && elapsed() < 10 * 60_000 + 10_000);
   const result = await flow.call();
   assert.equal(result.isError, true);
-  assert.match(textOf(result), /still waiting/);
+  assert.match(textOf(result), /did not approve within 10 minutes/);
   assert.match(textOf(result), /call get_api_key again for a new link, then show it to your user again/);
-  assert.match(textOf(result), /\(code: authorization_pending\)/);
+  assert.match(textOf(result), /\(code: expired_token\)/);
+  assert.doesNotMatch(textOf(result), /authorization_pending/);
   assert.deepEqual(keys, []);
   assert.equal(flow.status, "idle");
 });

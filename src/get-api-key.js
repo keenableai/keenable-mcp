@@ -95,11 +95,20 @@ const OUTCOMES = {
       code: "access_denied",
       docsUrl: DOCS_DEVICE_FLOW,
     }),
+  expired_after_network_error: ({ label }) =>
+    errorResult({
+      what:
+        "the approval code expired after a dropped connection to the key service. Your user may already have " +
+        `approved, so a key named ${label} may already exist in the console.`,
+      next: "call get_api_key again for a new link and code.",
+      code: "expired_token",
+      docsUrl: DOCS_DEVICE_FLOW,
+    }),
   timeout: () =>
     errorResult({
-      what: "still waiting: your user did not approve within 10 minutes, and the code has lapsed.",
+      what: "your user did not approve within 10 minutes, and the code has expired.",
       next: "call get_api_key again for a new link, then show it to your user again.",
-      code: "authorization_pending",
+      code: "expired_token",
       docsUrl: DOCS_DEVICE_FLOW,
     }),
 };
@@ -156,6 +165,7 @@ export function createApiKeyFlow({
     const deadline = now() + Math.min(pollTimeoutMs, code.expiresInMs);
     let intervalMs = code.intervalMs;
     let failedOnce = false;
+    let lostResponse = false;
     while (true) {
       await sleep(intervalMs);
       if (now() >= deadline) return { kind: "timeout" };
@@ -164,6 +174,7 @@ export function createApiKeyFlow({
         agent_code: code.agentCode,
         grant_type: GRANT_TYPE,
       });
+      if (res.networkError) lostResponse = true;
       if (isRetryableFailure(res)) {
         if (failedOnce) return { kind: "upstream", response: res };
         failedOnce = true;
@@ -182,7 +193,8 @@ export function createApiKeyFlow({
         intervalMs += 5_000;
         continue;
       }
-      if (error === "expired_token" || error === "access_denied") return { kind: error };
+      if (error === "expired_token") return { kind: lostResponse ? "expired_after_network_error" : error };
+      if (error === "access_denied") return { kind: error };
       if (res.status === 429) {
         await sleep(res.retryAfterMs ?? intervalMs);
         continue;
@@ -210,7 +222,7 @@ export function createApiKeyFlow({
       case "rejected":
         return rejectedError(outcome.response, "approval check");
       default:
-        return OUTCOMES[outcome.kind]();
+        return OUTCOMES[outcome.kind]({ label });
     }
   }
 

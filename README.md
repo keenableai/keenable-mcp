@@ -99,7 +99,9 @@ search logic in this package; the index and tools live behind
   default; ignored when `KEENABLE_API_KEY` is set). It runs the agent device
   flow: it returns a link and code for the agent to show its user, and once
   the user approves, the rest of the session sends the new key. The key is never
-  shown in tool output. See
+  shown in tool output. The key lives only in this session, and each approval
+  creates a new key named `<hostname>-mcp`. To reuse one key, set
+  `KEENABLE_API_KEY`; revoke old keys in the console. See
   [Get a key](https://docs.keenable.ai/authentication#device-flow).
 
 ## Development
