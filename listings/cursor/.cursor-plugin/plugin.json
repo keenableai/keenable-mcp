@@ -1,0 +1,14 @@
+{
+  "name": "keenable",
+  "description": "Web search built for AI agents. Find current pages on any topic, narrowed by site and publish date, then read any URL as clean markdown. Keyless, no sign-in.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Keenable",
+    "email": "support@keenable.ai"
+  },
+  "homepage": "https://keenable.ai/?utm_source=cursor&utm_medium=registry",
+  "repository": "https://github.com/keenableai/keenable-mcp",
+  "license": "MIT",
+  "keywords": ["web-search", "search", "fetch", "markdown", "research", "keyless"],
+  "logo": "https://raw.githubusercontent.com/keenableai/keenable-mcp/main/assets/logo.png"
+}

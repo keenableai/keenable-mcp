@@ -1,0 +1,19 @@
+{
+  "name": "keenable",
+  "owner": {
+    "name": "Keenable",
+    "email": "support@keenable.ai"
+  },
+  "metadata": {
+    "description": "Keenable web search for Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "keenable",
+      "source": "./listings/claude-code",
+      "description": "Web search built for AI agents: search the live web and read any URL as clean markdown. Keyless.",
+      "category": "productivity",
+      "tags": ["web-search", "search", "fetch", "research"]
+    }
+  ]
+}
