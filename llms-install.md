@@ -1,4 +1,4 @@
-# Installation guide for AI agents (Cline, etc.)
+# Installation guide for Cline
 
 This server is keyless by default. No signup, account, or API key is required to
 install or use it.
@@ -21,7 +21,9 @@ Add this to the MCP settings (`cline_mcp_settings.json` or the client's
 ```
 
 That is the complete setup. `KEENABLE_MCP_URL` only tags the install as coming
-from Cline; leave it out and the server works the same. On first run `npx`
+from Cline; leave it out and the server works the same. If you are installing
+for any client other than Cline, leave the `env` line out so the install is not
+counted as Cline. On first run `npx`
 downloads `@keenable/mcp`, which connects to the hosted server at `https://api.keenable.ai/mcp` and exposes two
 tools:
 

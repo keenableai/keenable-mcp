@@ -16,7 +16,7 @@ Attribution used by every listing:
 | Claude plugin directory | `claude-plugin` | Not submitted |
 | Cursor (cursor.directory, then Cursor Marketplace) | `cursor` | Not submitted |
 | Cline MCP Marketplace | `cline` | Not submitted |
-| skills.sh | `skills-sh` (web links only, see below) | Not submitted |
+| skills.sh | None yet (see below) | Not submitted |
 
 ## Official MCP Registry
 
@@ -92,7 +92,14 @@ staff recommend for most plugins, then to the curated marketplace.
   before ticking it.
 - **Attribution:** `llms-install.md` sets
   `KEENABLE_MCP_URL=https://api.keenable.ai/mcp?keenable_title=cline` for the
-  npm bridge, and its signup link carries `utm_source=cline`.
+  npm bridge, and its signup link carries `utm_source=cline`. The guide is
+  titled for Cline and tells other clients to drop the `env` line, so their
+  installs are not counted as Cline.
+- **Trade-off:** `KEENABLE_MCP_URL` overrides the bridge's built-in endpoint,
+  so Cline installs stay pinned to `https://api.keenable.ai/mcp` even if a later
+  `@keenable/mcp` release changes its default. Moving Cline users to another
+  endpoint means editing `llms-install.md` and asking them to update their
+  config.
 - **Status:** not submitted.
 
 ## skills.sh
@@ -102,10 +109,11 @@ staff recommend for most plugins, then to the curated marketplace.
   `npx skills add keenableai/keenable-mcp --skill keenable-web-search -g -y`.
 - **Listing:** `skills/keenable-web-search/SKILL.md` (name and description are
   what skills.sh search matches).
-- **Attribution limit:** the skill's script tags keyless calls with
-  `X-Keenable-Title: OpenClaw Skill`, and the same skill is published to
-  ClawHub, so skills.sh and ClawHub calls are not told apart. skills.sh's own
-  install count is the per-store number until the skill gets its own tag.
+- **No tag yet:** skills.sh has no attribution tag of its own. The skill's
+  script tags keyless calls with `X-Keenable-Title: OpenClaw Skill`, and the
+  same skill is published to ClawHub, so skills.sh and ClawHub calls are not
+  told apart. skills.sh's own install count is the per-store number until the
+  skill gets its own tag.
 - **Check:** `npx skills add keenableai/keenable-mcp --list` should show only
   `keenable-web-search`.
 - **Status:** not submitted (not seeded).

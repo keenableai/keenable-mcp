@@ -21,7 +21,10 @@ as described in the [Claude Code guide](https://docs.keenable.ai/integrations/cl
 /plugin install keenable@keenable
 ```
 
-Run `/mcp` to check that the `keenable` server is connected with both tools.
+Run `/mcp` to check that the server is connected with both tools. A plugin
+server is listed as `plugin:keenable:keenable`, and its tools are named
+`mcp__plugin_keenable_keenable__search_web_pages` and
+`mcp__plugin_keenable_keenable__fetch_page_content`.
 
 ## Links
 

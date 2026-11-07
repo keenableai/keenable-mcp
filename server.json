@@ -17,7 +17,6 @@
         {
           "name": "X-API-Key",
           "description": "Optional Keenable API key. Keyless by default (rate-limited); a key lifts the hourly cap.",
-          "isRequired": false,
           "isSecret": true
         }
       ]
@@ -35,7 +34,6 @@
         {
           "name": "KEENABLE_API_KEY",
           "description": "Optional Keenable API key. Keyless by default (rate-limited); a key lifts the hourly cap.",
-          "isRequired": false,
           "isSecret": true
         }
       ]

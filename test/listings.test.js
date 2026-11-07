@@ -71,6 +71,7 @@ test("the Claude plugin icon is a square PNG of 512-2048 px", () => {
 
 test("Cline install guide tags the bridge with keenable_title=cline and its link with utm", () => {
   const guide = text("llms-install.md");
+  assert.match(guide.split("\n")[0], /^# Installation guide for Cline$/);
   const urls = guide.match(/"KEENABLE_MCP_URL": "([^"]+)"/g).map((m) => m.split('"')[3]);
   assert.ok(urls.length >= 1);
   for (const url of urls) assert.equal(titleOf(url), "cline");
@@ -89,6 +90,11 @@ test("server.json mirrors the live MCP Registry entry", () => {
     ["https://api.keenable.ai/mcp-public?keenable_title=mcp-registry"],
   );
   assert.ok(server.description.length <= 100);
+  const optional = [
+    ...server.remotes.flatMap((r) => r.headers),
+    ...server.packages.flatMap((p) => p.environmentVariables),
+  ];
+  for (const field of optional) assert.equal("isRequired" in field, false, field.name);
 });
 
 test("the npm bridge default endpoint is unchanged", () => {
