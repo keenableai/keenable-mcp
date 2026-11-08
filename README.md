@@ -86,6 +86,22 @@ Stdio:
 }
 ```
 
+## Agent stores
+
+Each store has its own listing, and each one tags its traffic with its own
+`keenable_title` so calls can be counted per store:
+
+| Store | Listing source | Install |
+|---|---|---|
+| Claude Code plugins | [`listings/claude-code`](listings/claude-code) via [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) | `/plugin marketplace add keenableai/keenable-mcp`, then `/plugin install keenable@keenable` |
+| Cursor | [`listings/cursor`](listings/cursor) via [`.cursor-plugin/marketplace.json`](.cursor-plugin/marketplace.json) | From the Cursor marketplace or cursor.directory once listed |
+| Cline MCP Marketplace | [`llms-install.md`](llms-install.md) | From Cline's MCP Marketplace once listed |
+| skills.sh | [`skills/keenable-web-search`](skills/keenable-web-search) | `npx skills add keenableai/keenable-mcp --skill keenable-web-search` |
+| Official MCP Registry | [`server.json`](server.json) | [`ai.keenable/web-search`](https://registry.modelcontextprotocol.io/v0/servers?search=ai.keenable) |
+
+[`listings/SUBMISSION.md`](listings/SUBMISSION.md) tracks where each listing is
+submitted and its status.
+
 ## How the wrapper works
 
 `@keenable/mcp` is a small stdio bridge: it connects to the hosted server over
@@ -115,7 +131,8 @@ The npm version lives only in `package.json`; the bridge reads it at runtime.
 `packages[].version`, so bump both. `npm run check:version` compares them and
 runs automatically before `npm publish`. The top-level `server.json` `version`
 is the registry entry's own version and is bumped whenever `server.json`
-changes.
+changes. `server.json` mirrors the live registry entry (0.2.1): publish again
+only when its content changes.
 
 ## Links
 

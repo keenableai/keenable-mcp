@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "keenable": {
+      "url": "https://api.keenable.ai/mcp-public?keenable_title=cursor"
+    }
+  }
+}
