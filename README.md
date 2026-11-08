@@ -91,7 +91,16 @@ Stdio:
 `@keenable/mcp` is a small stdio bridge: it connects to the hosted server over
 Streamable HTTP and forwards every tool the server exposes. There is no
 search logic in this package; the index and tools live behind
-`https://api.keenable.ai/mcp`. Environment variables:
+`https://api.keenable.ai/mcp`.
+
+If the server can't be reached at startup (offline, VPN still connecting), the
+wrapper retries briefly, then starts anyway: it lists the bundled tool schemas
+and connects on the first call. A call that fails on a network error or a 5xx
+is retried once on a fresh connection; if it still fails, the tool returns an
+error that names the endpoint instead of a bare `fetch failed`. A rejected API
+key stops the wrapper at startup with the server's message.
+
+Environment variables:
 
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
 - `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`).
