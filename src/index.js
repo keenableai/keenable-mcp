@@ -16,6 +16,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { createRequire } from "node:module";
 import { serverInfo } from "./metadata.js";
+import { bridgeUserAgent } from "./client-agent.js";
 
 // package.json is the single source of the version; a release bumps it there.
 const { version: VERSION } = createRequire(import.meta.url)("../package.json");
@@ -24,8 +25,8 @@ const REMOTE_URL =
   process.env.KEENABLE_MCP_URL || "https://api.keenable.ai/mcp?keenable_title=npm";
 const API_KEY = process.env.KEENABLE_API_KEY;
 
-const requestInit = {};
-if (API_KEY) requestInit.headers = { "X-API-Key": API_KEY };
+const requestInit = { headers: { "User-Agent": bridgeUserAgent(VERSION) } };
+if (API_KEY) requestInit.headers["X-API-Key"] = API_KEY;
 
 const client = new Client(
   { name: "keenable-mcp", version: VERSION },
@@ -45,6 +46,11 @@ function bridgeServer(instructions, remoteInfo) {
     serverInfo(VERSION, remoteInfo),
     { capabilities: { tools: {} }, ...(instructions ? { instructions } : {}) },
   );
+  // The transport reads these headers on every request, so tool calls made
+  // after the host's handshake carry its name.
+  server.oninitialized = () => {
+    requestInit.headers["User-Agent"] = bridgeUserAgent(VERSION, server.getClientVersion());
+  };
   server.setRequestHandler(ListToolsRequestSchema, () => client.listTools());
   server.setRequestHandler(CallToolRequestSchema, (request) =>
     client.callTool(request.params),

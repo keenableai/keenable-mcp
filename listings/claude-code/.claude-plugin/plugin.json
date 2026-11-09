@@ -1,0 +1,27 @@
+{
+  "name": "keenable",
+  "displayName": "Keenable Web Search",
+  "version": "0.1.0",
+  "description": "Web search built for AI agents. Find current pages on any topic, narrowed by site and publish date, then read any URL as clean markdown. Keyless, no sign-in.",
+  "author": {
+    "name": "Keenable",
+    "email": "support@keenable.ai",
+    "url": "https://keenable.ai/?utm_source=claude-plugin&utm_medium=registry"
+  },
+  "homepage": "https://keenable.ai/?utm_source=claude-plugin&utm_medium=registry",
+  "documentationUrl": "https://docs.keenable.ai/integrations/claude?utm_source=claude-plugin&utm_medium=registry",
+  "supportUrl": "https://github.com/keenableai/keenable-mcp/issues",
+  "privacyPolicyUrl": "https://keenable.ai/privacy",
+  "termsOfServiceUrl": "https://keenable.ai/terms",
+  "repository": "https://github.com/keenableai/keenable-mcp",
+  "license": "MIT",
+  "keywords": [
+    "web-search",
+    "search",
+    "fetch",
+    "markdown",
+    "research",
+    "keyless"
+  ],
+  "icon": ".claude-plugin/icon.png"
+}

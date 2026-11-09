@@ -1,0 +1,17 @@
+{
+  "name": "keenable",
+  "owner": {
+    "name": "Keenable",
+    "email": "support@keenable.ai"
+  },
+  "plugins": [
+    {
+      "name": "keenable",
+      "source": "listings/cursor",
+      "description": "Web search built for AI agents: search the live web and read any URL as clean markdown. Keyless.",
+      "logo": "https://raw.githubusercontent.com/keenableai/keenable-mcp/main/assets/logo.png",
+      "category": "productivity",
+      "tags": ["web-search", "search", "fetch", "research"]
+    }
+  ]
+}
