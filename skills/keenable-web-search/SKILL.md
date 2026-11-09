@@ -66,19 +66,23 @@ web-fetch tool) before relying on a claim, and cite the source.
 | Flag | What it does |
 |------|-------------|
 | `--site <domain>` | Restrict the search to one site, e.g. `--site arxiv.org`. |
-| `--exclude-domain <host>` | Never return results from these hosts. Repeatable, and accepts comma lists: `--exclude-domain pinterest.com,quora.com --exclude-domain reddit.com`. Each entry is a host such as `example.com` and also covers its subdomains (`yahoo.com` covers `finance.yahoo.com`). Paths (`un.org/press`), suffixes (`.com`) and wildcards are rejected. Up to 1,000 hosts. |
+| `--exclude-domain <host>` | Never return results from these hosts or their subdomains. Repeatable, and accepts comma lists: `--exclude-domain pinterest.com,quora.com --exclude-domain reddit.com`. |
 | `--published-after` / `--published-before` | `YYYY-MM-DD` bounds on publish date, for time-sensitive research. |
 | `--acquired-after` / `--acquired-before` | `YYYY-MM-DD` bounds on when the page was indexed. |
 | `--json` | Raw JSON instead of formatted text. |
 
 Use `--site` for a single site. Use `--exclude-domain` to drop known-noisy
-sites from an otherwise open search. Hosts such as `github.io` or
-`blogspot.com` are accepted.
-The API cleans up unambiguous input (case, a scheme, a leading `www.`, a port,
-a trailing `/`, a query string). It rejects anything else with a 400
-`invalid_filter` error naming the field, the value and the reason: a path, a
-`.com`-style suffix, a wildcard, an IP address, a `user@` prefix, or an invalid
-host. An `--exclude-domain` with no host in it is rejected the same way. If every result is excluded, the output can be empty.
+sites from an otherwise open search. Hosts only, each covering its subdomains
+(`yahoo.com` covers `finance.yahoo.com`); up to 1,000 distinct hosts (2,000
+entries as sent, 2,048 bytes each). The API rejects anything else with a 400
+`invalid_filter` error naming the entry. The full rules are in the
+[README](https://github.com/keenableai/keenable-mcp#exclude_domains).
+
+The script splits every value on commas and sends each trimmed piece, blank
+ones included, so `--exclude-domain ""` or `a.com,` fails with
+`invalid_filter` instead of searching unfiltered. A URL with commas in its
+query is split too and fails the same way, on purpose: pass the host.
+If every result is excluded, the output can be empty.
 If the output starts with a `Note:` line, the API returned a `warning`; read it
 before relying on the results.
 

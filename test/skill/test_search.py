@@ -8,7 +8,10 @@ import unittest
 import urllib.error
 from unittest import mock
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "..", "..", "skills", "keenable-web-search", "scripts",
+))
 
 import search  # noqa: E402
 
@@ -19,13 +22,15 @@ class SplitDomainsTest(unittest.TestCase):
 
     def test_commas_whitespace_dedup_order(self):
         self.assertEqual(
-            search.split_domains(["a.com, b.com,,a.com", "who.int", " b.com "]),
+            search.split_domains(["a.com, b.com,a.com", "who.int", " b.com "]),
             ["a.com", "b.com", "who.int"],
         )
 
-    def test_only_blanks_is_sent_for_the_api_to_reject(self):
+    def test_blanks_are_sent_for_the_api_to_reject(self):
+        self.assertEqual(search.split_domains(["", "reddit.com"]), ["", "reddit.com"])
+        self.assertEqual(search.split_domains(["a.com,"]), ["a.com", ""])
+        self.assertEqual(search.split_domains(["a.com,,b.com"]), ["a.com", "", "b.com"])
         self.assertEqual(search.split_domains([" , "]), [""])
-        self.assertEqual(search.split_domains([""]), [""])
 
 
 class BuildPayloadTest(unittest.TestCase):
@@ -35,7 +40,9 @@ class BuildPayloadTest(unittest.TestCase):
 
     def test_every_filter_passed_through(self):
         filters = {k: f"v-{k}" for k in search._PARAMS}
+        filters["exclude_domains"] = ["a.com", "b.com"]
         payload = search.build_payload("q", **filters)
+        self.assertEqual(payload["exclude_domains"], ["a.com", "b.com"])
         self.assertEqual(payload, {"query": "q", "mode": "pro", **filters})
 
 
@@ -50,6 +57,12 @@ class FormatResultsTest(unittest.TestCase):
     def test_warning_shown_when_no_results_left(self):
         out = search.format_results({"warning": "W", "results": []})
         self.assertTrue(out.startswith("Note: W\n"))
+
+    def test_blank_or_non_string_warning_ignored(self):
+        for warning in ("", "  ", None, 3, ["W"]):
+            with self.subTest(warning=warning):
+                out = search.format_results({"warning": warning, "results": []})
+                self.assertEqual(out, "No results.")
 
 
 class _Response(io.BytesIO):
@@ -105,8 +118,15 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(json.loads(sent[0].data), {"query": "q", "mode": "pro"})
 
     def test_blank_exclude_reaches_body(self):
-        sent, _ = self._run(["q", "--exclude-domain", ""])
-        self.assertEqual(json.loads(sent[0].data)["exclude_domains"], [""])
+        cases = [
+            (["--exclude-domain", ""], [""]),
+            (["--exclude-domain", "", "--exclude-domain", "reddit.com"], ["", "reddit.com"]),
+            (["--exclude-domain", "a.com,"], ["a.com", ""]),
+        ]
+        for flags, expected in cases:
+            with self.subTest(flags=flags):
+                sent, _ = self._run(["q", *flags])
+                self.assertEqual(json.loads(sent[0].data)["exclude_domains"], expected)
 
     def test_site_with_exclude_reaches_body(self):
         sent, _ = self._run(["q", "--site", "a.com", "--exclude-domain", "b.com"])

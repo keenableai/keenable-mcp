@@ -48,4 +48,4 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: python -I -m unittest discover -s skills/keenable-web-search/scripts -p "test_*.py" -v
+      - run: python -I -m unittest discover -s test/skill -p "test_*.py" -v

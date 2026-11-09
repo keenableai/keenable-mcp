@@ -12,7 +12,7 @@ Attribution used by every listing:
 
 | Store | Tag | Status |
 |---|---|---|
-| Official MCP Registry | `mcp-registry` | Live (`ai.keenable/web-search` 0.2.1). Do not resubmit. |
+| Official MCP Registry | `mcp-registry` | Live (`ai.keenable/web-search` 0.2.1). 0.2.2 pending: republish after this release (see below). |
 | Claude plugin directory | `claude-plugin` | Not submitted |
 | Cursor (cursor.directory, then Cursor Marketplace) | `cursor` | Not submitted |
 | Cline MCP Marketplace | `cline` | Not submitted |

@@ -31,14 +31,10 @@ _PARAMS = (
 
 
 def split_domains(values):
-    out = []
-    for raw in values or ():
-        for part in raw.split(","):
-            entry = part.strip()
-            if entry and entry not in out:
-                out.append(entry)
-    # A flag given only blanks is sent as [""] so the API rejects it.
-    return out or ([""] if values else [])
+    # Blank pieces are kept so the API rejects them with invalid_filter.
+    return list(dict.fromkeys(
+        part.strip() for raw in values or () for part in raw.split(",")
+    ))
 
 
 def build_payload(query, **filters):
@@ -73,8 +69,8 @@ def search(query, **filters):
 def format_results(data):
     out = []
     warning = data.get("warning")
-    if warning:
-        out.append(f"Note: {warning}")
+    if isinstance(warning, str) and warning.strip():
+        out.append(f"Note: {warning.strip()}")
     results = data.get("results", [])
     if not results:
         out.append("No results.")
@@ -100,9 +96,9 @@ def parse_args(argv=None):
         dest="exclude_domain",
         action="append",
         metavar="HOST",
-        help="Never return results from these hosts and their subdomains. "
-        "Repeatable; comma lists OK (e.g. pinterest.com,quora.com). Hosts only: "
-        "no paths or .gov suffixes. Up to 1,000 hosts.",
+        help="Never return results from this host or its subdomains. "
+        "Repeatable; comma lists OK (e.g. pinterest.com,quora.com). "
+        "Limits and rules: see SKILL.md.",
     )
     p.add_argument("--published-after", dest="published_after", help="YYYY-MM-DD")
     p.add_argument("--published-before", dest="published_before", help="YYYY-MM-DD")

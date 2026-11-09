@@ -18,18 +18,28 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 | `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 50000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`. |
 
+### `exclude_domains`
+
 Use `site` for one site and `exclude_domains` (array) to drop sites from the
-results. Every entry is a host such as `example.com`, and it also covers its
-subdomains (`yahoo.com` covers `finance.yahoo.com`). Up to 1,000 distinct
-hosts. Hosts such as `github.io` or `blogspot.com` are accepted. If every
-result is excluded, the response can be empty.
+results. This section is the one place the rules are written down; the skill
+and `llms-install.md` point here.
+
+- Hosts only, such as `example.com`. Each host covers its subdomains
+  (`yahoo.com` covers `finance.yahoo.com`). Hosting suffixes such as
+  `github.io` or `blogspot.com` are accepted.
+- Up to 1,000 distinct hosts, 2,000 entries as sent, 2,048 bytes per entry.
+- The server cleans up surrounding spaces, case, an `http://` or `https://`
+  scheme, a leading `www.`, a port, a trailing `/` or `.`, and a query string
+  or fragment.
+- It rejects anything else with a 400 `invalid_filter` error whose `field`,
+  `value` and `reason` name the entry (or the count, for a limit): an empty
+  entry, a path, another scheme, a suffix such as `.com` or `com`, a
+  wildcard, an IP address, a `user@` prefix, or an invalid host.
+- If every result is excluded, the response can be empty.
 
 The hosted server is the validator; the npm wrapper passes the list through
-unchanged. The server cleans up unambiguous input for you (surrounding spaces,
-case, a scheme, a leading `www.`, a port, a trailing `/`, a query string).
-Anything else comes back as a 400 `invalid_filter` error with `field`, `value`
-and `reason`: a path, a `.com`-style suffix, a wildcard, an IP address, a
-`user@` prefix, or an invalid host.
+unchanged. `src/tools.js` copies the server's own parameter text verbatim, so
+it changes only when the server's does.
 
 ## Use it
 
@@ -136,8 +146,8 @@ npm test
 (`src/discovery.js`): `initialize` must advertise the server metadata and
 `tools/list` must return both tools. CI runs it on Node 18, 20 and 22 and on
 the oldest MCP SDK the package accepts. The skill script's tests run with
-`python3 -I -m unittest discover -s skills/keenable-web-search/scripts -p "test_*.py"`,
-also in CI.
+`python3 -I -m unittest discover -s test/skill -p "test_*.py"`, also in CI. They
+live outside `skills/` so `npx skills add` does not install them.
 
 ## Releasing
 
