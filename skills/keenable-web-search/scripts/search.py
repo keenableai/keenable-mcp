@@ -108,16 +108,15 @@ def parse_args(argv=None):
     p.add_argument("--acquired-after", dest="acquired_after", help="YYYY-MM-DD")
     p.add_argument("--acquired-before", dest="acquired_before", help="YYYY-MM-DD")
     p.add_argument("-j", "--json", action="store_true", help="Output raw JSON")
-    args = p.parse_args(argv)
-    return args, split_domains(args.exclude_domain)
+    return p.parse_args(argv)
 
 
 def main(argv=None):
-    args, exclude_domains = parse_args(argv)
+    args = parse_args(argv)
     data = search(
         " ".join(args.query),
         site=args.site,
-        exclude_domains=exclude_domains,
+        exclude_domains=split_domains(args.exclude_domain),
         published_after=args.published_after,
         published_before=args.published_before,
         acquired_after=args.acquired_after,

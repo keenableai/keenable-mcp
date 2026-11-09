@@ -3,7 +3,6 @@ name: test
 # Unit tests plus a stdio smoke test of the discovery build: initialize must
 # advertise the server metadata and tools/list must return both tools. Runs on
 # every supported Node major and on the oldest MCP SDK the package accepts.
-# The skill job runs the skill script's Python tests.
 
 on:
   pull_request:

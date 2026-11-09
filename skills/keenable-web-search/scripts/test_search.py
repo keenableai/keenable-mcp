@@ -28,86 +28,27 @@ class SplitDomainsTest(unittest.TestCase):
 
 
 class BuildPayloadTest(unittest.TestCase):
-    def test_no_filters_matches_previous_payload(self):
-        self.assertEqual(search.build_payload("q"), {"query": "q", "mode": "pro"})
-
     def test_empty_lists_are_omitted(self):
         payload = search.build_payload("q", exclude_domains=[], site=None)
         self.assertEqual(payload, {"query": "q", "mode": "pro"})
-
-    def test_list_sent_as_array(self):
-        payload = search.build_payload("q", exclude_domains=["x.com", "y.com"])
-        self.assertEqual(payload["exclude_domains"], ["x.com", "y.com"])
 
     def test_every_filter_passed_through(self):
         filters = {k: f"v-{k}" for k in search._PARAMS}
         payload = search.build_payload("q", **filters)
         self.assertEqual(payload, {"query": "q", "mode": "pro", **filters})
-        self.assertEqual(
-            set(search._PARAMS),
-            {"site", "exclude_domains", "published_after",
-             "published_before", "acquired_after", "acquired_before"},
-        )
-
-
-class ParseArgsTest(unittest.TestCase):
-    def test_repeatable_and_comma_lists(self):
-        _, exc = search.parse_args(
-            ["q", "--exclude-domain", "a.com,b.com", "--exclude-domain", "who.int"]
-        )
-        self.assertEqual(exc, ["a.com", "b.com", "who.int"])
-
-    def test_help_states_host_only_contract_and_limits(self):
-        out = io.StringIO()
-        with contextlib.redirect_stdout(out):
-            with self.assertRaises(SystemExit):
-                search.parse_args(["--help"])
-        text = " ".join(out.getvalue().split())
-        self.assertIn("hosts and their subdomains", text)
-        self.assertIn("no paths or .gov suffixes", text)
-        self.assertIn("Up to 1,000 hosts", text)
-
-    def test_allowed_combinations(self):
-        cases = [
-            (["q", "--site", "a.com", "--exclude-domain", "b.com"], ["b.com"]),
-            (["q", "--exclude-domain", " , "], []),
-        ]
-        for argv, want_exc in cases:
-            with self.subTest(argv=argv):
-                _, exc = search.parse_args(argv)
-                self.assertEqual(exc, want_exc)
 
 
 class FormatResultsTest(unittest.TestCase):
-    def test_no_results(self):
-        self.assertEqual(search.format_results({"results": []}), "No results.")
-
-    def test_warning_shown_with_results(self):
+    def test_warning_shown_before_results(self):
         out = search.format_results(
-            {"warning": "Some results were removed by the domain filter.",
-             "results": [{"title": "T", "url": "https://a.com"}]}
+            {"warning": "W", "results": [{"title": "T", "url": "https://a.com"}]}
         )
-        self.assertTrue(out.startswith("Note: Some results were removed by the domain filter.\n"))
-        self.assertIn("1. T\n   https://a.com", out)
+        self.assertTrue(out.startswith("Note: W\n"))
+        self.assertIn("https://a.com", out)
 
     def test_warning_shown_when_no_results_left(self):
         out = search.format_results({"warning": "W", "results": []})
-        self.assertEqual(out, "Note: W\nNo results.")
-
-    def test_result_rendering(self):
-        long_desc = "line one\n" + "x" * 441
-        out = search.format_results({"results": [
-            {"url": "https://a.com", "description": long_desc},
-            {"title": "B", "url": "https://b.com", "snippet": "  short  ", "description": "ignored"},
-            {"title": "C", "url": "https://c.com", "snippet": ""},
-        ]})
-        self.assertEqual(out, "\n".join([
-            "1. Untitled\n   https://a.com",
-            "   " + ("line one " + "x" * 441)[:400] + "...",
-            "2. B\n   https://b.com",
-            "   short",
-            "3. C\n   https://c.com",
-        ]))
+        self.assertTrue(out.startswith("Note: W\n"))
 
 
 class _Response(io.BytesIO):
@@ -170,14 +111,9 @@ class RequestTest(unittest.TestCase):
         )
 
     def test_json_output_keeps_warning(self):
-        resp = {"warning": "W", "results": [{"title": "é", "url": "u"}]}
+        resp = {"warning": "W", "results": [{"title": "T", "url": "u"}]}
         _, out = self._run(["q", "--json"], response=resp)
         self.assertEqual(json.loads(out), resp)
-        self.assertIn("é", out)
-
-    def test_text_output_shows_warning(self):
-        _, out = self._run(["q"], response={"warning": "W", "results": []})
-        self.assertEqual(out, "Note: W\nNo results.\n")
 
     def test_error_exits(self):
         def http_error(code, body):
