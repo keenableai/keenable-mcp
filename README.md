@@ -135,7 +135,9 @@ npm test
 `npm test` runs the unit tests and a stdio smoke test of the discovery build
 (`src/discovery.js`): `initialize` must advertise the server metadata and
 `tools/list` must return both tools. CI runs it on Node 18, 20 and 22 and on
-the oldest MCP SDK the package accepts.
+the oldest MCP SDK the package accepts. The skill script's tests run with
+`python3 -I -m unittest discover -s skills/keenable-web-search/scripts -p "test_*.py"`,
+also in CI.
 
 ## Releasing
 

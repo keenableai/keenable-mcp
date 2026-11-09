@@ -3,6 +3,7 @@ name: test
 # Unit tests plus a stdio smoke test of the discovery build: initialize must
 # advertise the server metadata and tools/list must return both tools. Runs on
 # every supported Node major and on the oldest MCP SDK the package accepts.
+# The skill job runs the skill script's Python tests.
 
 on:
   pull_request:
@@ -35,3 +36,17 @@ jobs:
       - if: matrix.sdk != 'range'
         run: npm install --no-audit --no-fund --no-save "@modelcontextprotocol/sdk@${{ matrix.sdk }}"
       - run: npm test
+
+  skill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -I -m unittest discover -s skills/keenable-web-search/scripts -p "test_*.py" -v
