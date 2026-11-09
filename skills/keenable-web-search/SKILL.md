@@ -78,7 +78,7 @@ The API cleans up unambiguous input (case, a scheme, a leading `www.`, a port,
 a trailing `/`, a query string). It rejects anything else with a 400
 `invalid_filter` error naming the field, the value and the reason: a path, a
 `.com`-style suffix, a wildcard, an IP address, a `user@` prefix, or an invalid
-host. If every result is excluded, the output can be empty.
+host. An `--exclude-domain` with no host in it is rejected the same way. If every result is excluded, the output can be empty.
 If the output starts with a `Note:` line, the API returned a `warning`; read it
 before relying on the results.
 

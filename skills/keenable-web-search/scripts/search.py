@@ -37,7 +37,8 @@ def split_domains(values):
             entry = part.strip()
             if entry and entry not in out:
                 out.append(entry)
-    return out
+    # A flag given only blanks is sent as [""] so the API rejects it.
+    return out or ([""] if values else [])
 
 
 def build_payload(query, **filters):

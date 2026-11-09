@@ -23,8 +23,9 @@ class SplitDomainsTest(unittest.TestCase):
             ["a.com", "b.com", "who.int"],
         )
 
-    def test_only_separators_gives_empty_list(self):
-        self.assertEqual(search.split_domains([" , "]), [])
+    def test_only_blanks_is_sent_for_the_api_to_reject(self):
+        self.assertEqual(search.split_domains([" , "]), [""])
+        self.assertEqual(search.split_domains([""]), [""])
 
 
 class BuildPayloadTest(unittest.TestCase):
@@ -102,6 +103,10 @@ class RequestTest(unittest.TestCase):
     def test_plain_query_body_has_no_filters(self):
         sent, _ = self._run(["q"])
         self.assertEqual(json.loads(sent[0].data), {"query": "q", "mode": "pro"})
+
+    def test_blank_exclude_reaches_body(self):
+        sent, _ = self._run(["q", "--exclude-domain", ""])
+        self.assertEqual(json.loads(sent[0].data)["exclude_domains"], [""])
 
     def test_site_with_exclude_reaches_body(self):
         sent, _ = self._run(["q", "--site", "a.com", "--exclude-domain", "b.com"])
