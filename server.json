@@ -8,7 +8,7 @@
     "url": "https://github.com/keenableai/keenable-mcp",
     "source": "github"
   },
-  "version": "0.2.1",
+  "version": "0.2.2",
   "remotes": [
     {
       "type": "streamable-http",
@@ -26,7 +26,7 @@
     {
       "registryType": "npm",
       "identifier": "@keenable/mcp",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "transport": {
         "type": "stdio"
       },

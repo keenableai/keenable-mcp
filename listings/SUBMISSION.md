@@ -12,7 +12,7 @@ Attribution used by every listing:
 
 | Store | Tag | Status |
 |---|---|---|
-| Official MCP Registry | `mcp-registry` | Live (`ai.keenable/web-search` 0.2.1). Do not resubmit. |
+| Official MCP Registry | `mcp-registry` | Live (`ai.keenable/web-search` 0.2.1). 0.2.2 pending: republish after this release (see below). |
 | Claude plugin directory | `claude-plugin` | Not submitted |
 | Cursor (cursor.directory, then Cursor Marketplace) | `cursor` | Not submitted |
 | Cline MCP Marketplace | `cline` | Not submitted |
@@ -20,7 +20,8 @@ Attribution used by every listing:
 
 ## Official MCP Registry
 
-- Already live. `server.json` mirrors the published 0.2.1 entry, whose remote is
+- Already live as 0.2.1. `server.json` is 0.2.2 (npm 0.1.2), not yet
+  published. The remote is
   `https://api.keenable.ai/mcp-public?keenable_title=mcp-registry`.
 - Republish only when `server.json` changes, with `mcp-publisher publish` and a
   new top-level `version`.

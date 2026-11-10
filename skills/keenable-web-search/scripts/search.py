@@ -3,6 +3,7 @@
 
 Usage:
   python3 search.py "your query" [--site arxiv.org]
+                     [--exclude-domain HOST ...]
                      [--published-after YYYY-MM-DD] [--published-before YYYY-MM-DD]
                      [--acquired-after YYYY-MM-DD] [--acquired-before YYYY-MM-DD]
                      [--json]
@@ -19,14 +20,33 @@ import urllib.request
 SEARCH_URL = "https://api.keenable.ai/v1/search/public"
 APP_TITLE = "OpenClaw Skill"  # attribution tag for keyless traffic (X-Keenable-Title)
 
-_PARAMS = ("site", "published_after", "published_before", "acquired_after", "acquired_before")
+_PARAMS = (
+    "site",
+    "exclude_domains",
+    "published_after",
+    "published_before",
+    "acquired_after",
+    "acquired_before",
+)
 
 
-def search(query, **filters):
+def split_domains(values):
+    # Blank pieces are kept so the API rejects them with invalid_filter.
+    return list(dict.fromkeys(
+        part.strip() for raw in values or () for part in raw.split(",")
+    ))
+
+
+def build_payload(query, **filters):
     payload = {"query": query, "mode": "pro"}
     for k in _PARAMS:
         if filters.get(k):
             payload[k] = filters[k]
+    return payload
+
+
+def search(query, **filters):
+    payload = build_payload(query, **filters)
 
     req = urllib.request.Request(
         SEARCH_URL,
@@ -47,10 +67,14 @@ def search(query, **filters):
 
 
 def format_results(data):
+    out = []
+    warning = data.get("warning")
+    if isinstance(warning, str) and warning.strip():
+        out.append(f"Note: {warning.strip()}")
     results = data.get("results", [])
     if not results:
-        return "No results."
-    out = []
+        out.append("No results.")
+        return "\n".join(out)
     for i, r in enumerate(results, 1):
         title = r.get("title") or "Untitled"
         url = r.get("url", "")
@@ -63,20 +87,33 @@ def format_results(data):
     return "\n".join(out)
 
 
-def main():
+def parse_args(argv=None):
     p = argparse.ArgumentParser(description="Keenable web search (keyless)")
     p.add_argument("query", nargs="+", help="Natural-language search query")
     p.add_argument("--site", help="Restrict to one site, e.g. arxiv.org")
+    p.add_argument(
+        "--exclude-domain",
+        dest="exclude_domain",
+        action="append",
+        metavar="HOST",
+        help="Never return results from this host or its subdomains. "
+        "Repeatable; comma lists OK (e.g. pinterest.com,quora.com). "
+        "Limits and rules: see SKILL.md.",
+    )
     p.add_argument("--published-after", dest="published_after", help="YYYY-MM-DD")
     p.add_argument("--published-before", dest="published_before", help="YYYY-MM-DD")
     p.add_argument("--acquired-after", dest="acquired_after", help="YYYY-MM-DD")
     p.add_argument("--acquired-before", dest="acquired_before", help="YYYY-MM-DD")
     p.add_argument("-j", "--json", action="store_true", help="Output raw JSON")
-    args = p.parse_args()
+    return p.parse_args(argv)
 
+
+def main(argv=None):
+    args = parse_args(argv)
     data = search(
         " ".join(args.query),
         site=args.site,
+        exclude_domains=split_domains(args.exclude_domain),
         published_after=args.published_after,
         published_before=args.published_before,
         acquired_after=args.acquired_after,
