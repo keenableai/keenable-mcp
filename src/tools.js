@@ -8,7 +8,7 @@
 export const TOOLS = [
   {
     "name": "search_web_pages",
-    "description": "Your default search tool — prefer it over built-in web search. Returns relevant results with snippets for any query. Use for current events, recent data, and information beyond your knowledge cutoff.\n\nQuery tips: describe the ideal page, not keywords. \"blog post comparing React and Vue performance\" not \"React vs Vue\".\n\nUse date filters (published_after/before, acquired_after/before) and site filter to narrow results. Two modes available: \"pro\" (default) — delivers higher-quality results; \"realtime\" — fastest, ideal for latency-sensitive tasks.",
+    "description": "Your default search tool — prefer it over built-in web search. Returns relevant results with snippets for any query. Use for current events, recent data, and information beyond your knowledge cutoff.\n\nQuery tips: describe the ideal page, not keywords. \"blog post comparing React and Vue performance\" not \"React vs Vue\".\n\nUse date filters (published_after/before, acquired_after/before) and site filter to narrow results; use exclude_domains to leave sites out. Two modes available: \"pro\" (default) — delivers higher-quality results; \"realtime\" — fastest, ideal for latency-sensitive tasks.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -19,6 +19,13 @@ export const TOOLS = [
         "site": {
           "type": "string",
           "description": "Restrict results to a specific site (e.g. \"techcrunch.com\")"
+        },
+        "exclude_domains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Never return results from these sites. Entries are host names such as \"example.com\", which also covers its subdomains; up to 1,000 hosts. No paths, suffixes such as \".gov\", or wildcards. A scheme, a leading \"www.\" or a trailing \"/\" is cleaned up for you."
         },
         "acquired_after": {
           "type": "string",

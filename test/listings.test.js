@@ -81,10 +81,10 @@ test("Cline install guide tags the bridge with keenable_title=cline and its link
   }
 });
 
-test("server.json mirrors the live MCP Registry entry", () => {
+test("server.json is the MCP Registry entry", () => {
   const server = json("server.json");
   assert.equal(server.name, "ai.keenable/web-search");
-  assert.equal(server.version, "0.2.1");
+  assert.equal(server.version, "0.2.2");
   assert.deepEqual(
     server.remotes.map((r) => r.url),
     ["https://api.keenable.ai/mcp-public?keenable_title=mcp-registry"],
