@@ -3,7 +3,9 @@ name: Publish to npm
 # Publishes `@keenable/mcp` to npm via Trusted Publishing (OIDC): no npm
 # tokens or OTPs. Same pattern as publish-python.yml in keenable-sdk. Runs when
 # a GitHub Release is published; the tag must be `v<version>` and match
-# package.json (e.g. v0.1.2 -> version 0.1.2).
+# package.json (e.g. v0.1.2 -> version 0.1.2). A manual run must be started
+# from such a tag, never a branch. Prerelease versions (0.2.0-beta.1) go to the
+# `next` dist-tag so `npm install @keenable/mcp` keeps getting the stable one.
 #
 # One-time setup on npmjs.com: package @keenable/mcp -> Settings -> Trusted
 # publisher -> GitHub Actions, repo keenableai/keenable-mcp, workflow
@@ -29,10 +31,14 @@ jobs:
         with:
           node-version: 22
       - name: Tag matches package.json
-        if: github.event_name == 'release'
         env:
-          TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.event.release.tag_name || github.ref_name }}
+          REF_TYPE: ${{ github.event_name == 'release' && 'tag' || github.ref_type }}
         run: |
+          if [ "$REF_TYPE" != "tag" ]; then
+            echo "::error::Manual runs must be started from a v<version> tag, not a branch."
+            exit 1
+          fi
           version=$(node -p "require('./package.json').version")
           if [ "$TAG" != "v$version" ]; then
             echo "::error::Release tag $TAG does not match package.json version $version (expected v$version)."
@@ -69,5 +75,14 @@ jobs:
         with:
           name: package
           path: dist/
+      # The ./ prefix is required: npm reads `dist/x.tgz` as a GitHub repo.
       - name: Publish (Trusted Publishing, with provenance)
-        run: npm publish dist/*.tgz --access public
+        run: |
+          tarball=$(ls ./dist/*.tgz)
+          version=$(tar -xOzf "$tarball" package/package.json | node -p "JSON.parse(require('fs').readFileSync(0)).version")
+          case "$version" in
+            *-*) tag=next ;;
+            *) tag=latest ;;
+          esac
+          echo "Publishing $version with dist-tag $tag"
+          npm publish "$tarball" --access public --tag "$tag"
