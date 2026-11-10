@@ -15,7 +15,7 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 
 | Tool | Description |
 |---|---|
-| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
+| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 50000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`. |
 
 ### `exclude_domains`
@@ -45,8 +45,8 @@ it changes only when the server's does.
 
 ### Remote (recommended)
 
-Clients with remote MCP support — Cursor, Cline, VS Code, and Claude Desktop's
-Custom Connectors UI — connect to the URL directly:
+Clients with remote MCP support connect to the URL directly. In Claude
+Desktop's Custom Connectors UI, paste the URL. Cursor takes this entry:
 
 ```json
 {
@@ -58,6 +58,16 @@ Custom Connectors UI — connect to the URL directly:
   }
 }
 ```
+
+Other clients spell it differently:
+
+- **Claude Code**: run
+  `claude mcp add keenable --transport http https://api.keenable.ai/mcp`, or set
+  `"type": "http"` in `.mcp.json`.
+- **Cline** (`cline_mcp_settings.json`): set `"type": "streamableHttp"`. Without
+  a type Cline falls back to the legacy SSE transport.
+- **VS Code** (`.vscode/mcp.json`): the top-level key is `servers`, not
+  `mcpServers`, and the type is `"http"`.
 
 ### Stdio (e.g. Claude Desktop's `claude_desktop_config.json`)
 
