@@ -112,6 +112,17 @@ search logic in this package; the index and tools live behind
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
 - `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`).
 
+If the hosted server can't be reached when the wrapper starts (no network, a
+rejected API key), it still starts: it lists its built-in copy of the tools,
+and a tool call returns the reason as a tool error, so the model can report
+it. Every call tries the connection again, so nothing needs restarting once
+the problem is fixed. The reason is also written to stderr, which most clients
+keep in their MCP server log.
+
+Behind an HTTP proxy, Node does not read `HTTPS_PROXY` by default. On Node
+22.21 or newer, add `"NODE_USE_ENV_PROXY": "1"` to the `env` block next to your
+proxy variables.
+
 ## Development
 
 ```sh
@@ -121,7 +132,8 @@ npm test
 
 `npm test` runs the unit tests and a stdio smoke test of the discovery build
 (`src/discovery.js`): `initialize` must advertise the server metadata and
-`tools/list` must return both tools. CI runs it on Node 18, 20 and 22 and on
+`tools/list` must return both tools. It also runs the bridge (`src/index.js`)
+against a local stand-in for the hosted server, so no test needs the network. CI runs it on Node 18, 20 and 22 and on
 the oldest MCP SDK the package accepts.
 
 ## Releasing
