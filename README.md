@@ -23,8 +23,7 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 ### Remote (recommended)
 
 Clients with remote MCP support connect to the URL directly. In Claude
-Desktop's Custom Connectors UI, paste the URL. Cursor and Claude Code take this
-entry:
+Desktop's Custom Connectors UI, paste the URL. Cursor takes this entry:
 
 ```json
 {
@@ -37,8 +36,11 @@ entry:
 }
 ```
 
-Two clients spell it differently:
+Other clients spell it differently:
 
+- **Claude Code**: run
+  `claude mcp add keenable --transport http https://api.keenable.ai/mcp`, or set
+  `"type": "http"` in `.mcp.json`.
 - **Cline** (`cline_mcp_settings.json`): set `"type": "streamableHttp"`. Without
   a type Cline falls back to the legacy SSE transport.
 - **VS Code** (`.vscode/mcp.json`): the top-level key is `servers`, not
