@@ -1,0 +1,88 @@
+name: Publish to npm
+
+# Publishes `@keenable/mcp` to npm via Trusted Publishing (OIDC): no npm
+# tokens or OTPs. Same pattern as publish-python.yml in keenable-sdk. Runs when
+# a GitHub Release is published; the tag must be `v<version>` and match
+# package.json (e.g. v0.1.2 -> version 0.1.2). A manual run must be started
+# from such a tag, never a branch. Prerelease versions (0.2.0-beta.1) go to the
+# `next` dist-tag so `npm install @keenable/mcp` keeps getting the stable one.
+#
+# One-time setup on npmjs.com: package @keenable/mcp -> Settings -> Trusted
+# publisher -> GitHub Actions, repo keenableai/keenable-mcp, workflow
+# `publish-npm.yml`, environment `npm`.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Verify and pack
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tag matches package.json
+        env:
+          TAG: ${{ github.event.release.tag_name || github.ref_name }}
+          REF_TYPE: ${{ github.event_name == 'release' && 'tag' || github.ref_type }}
+        run: |
+          if [ "$REF_TYPE" != "tag" ]; then
+            echo "::error::Manual runs must be started from a v<version> tag, not a branch."
+            exit 1
+          fi
+          version=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::Release tag $TAG does not match package.json version $version (expected v$version)."
+            exit 1
+          fi
+      - run: npm run check:version
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - name: Pack
+        run: mkdir dist && npm pack --pack-destination dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: dist/
+
+  publish:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@keenable/mcp
+    permissions:
+      id-token: write # required for Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      # Trusted Publishing needs npm 11.5.1 or later; Node 22 ships npm 10.
+      - run: npm install -g npm@11
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: dist/
+      # The ./ prefix is required: npm reads `dist/x.tgz` as a GitHub repo.
+      - name: Publish (Trusted Publishing, with provenance)
+        run: |
+          tarball=$(ls ./dist/*.tgz)
+          version=$(tar -xOzf "$tarball" package/package.json | node -p "JSON.parse(require('fs').readFileSync(0)).version")
+          case "$version" in
+            *-*) tag=next ;;
+            *) tag=latest ;;
+          esac
+          echo "Publishing $version with dist-tag $tag"
+          npm publish "$tarball" --access public --tag "$tag"
