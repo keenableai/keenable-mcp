@@ -135,6 +135,23 @@ search logic in this package; the index and tools live behind
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
 - `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`).
 
+If the hosted server can't be reached when the wrapper starts (no network, a
+rejected API key), it still starts: it lists its built-in copy of the tools,
+and a tool call returns the reason as a tool error, so the model can report
+it. Every call tries the connection again, so nothing needs restarting once
+the problem is fixed. The reason is also written to stderr, which most clients
+keep in their MCP server log.
+
+The wrapper waits up to 10 seconds for the hosted server before starting
+without it. A session started that way does not get the hosted server's usage
+instructions; they are back the next time the client launches the wrapper. An
+invalid `KEENABLE_MCP_URL` is the one thing that stops it: it prints one line
+naming the value and exits.
+
+Behind an HTTP proxy, Node does not read `HTTPS_PROXY` by default. On Node
+22.21 or newer, add `"NODE_USE_ENV_PROXY": "1"` to the `env` block next to your
+proxy variables.
+
 ## Development
 
 ```sh
@@ -144,7 +161,8 @@ npm test
 
 `npm test` runs the unit tests and a stdio smoke test of the discovery build
 (`src/discovery.js`): `initialize` must advertise the server metadata and
-`tools/list` must return both tools. CI runs it on Node 18, 20 and 22 and on
+`tools/list` must return both tools. It also runs the bridge (`src/index.js`)
+against a local stand-in for the hosted server, so no test needs the network. CI runs it on Node 18, 20 and 22 and on
 the oldest MCP SDK the package accepts. The skill script's tests run with
 `python3 -I -m unittest discover -s test/skill -p "test_*.py"`, also in CI. They
 live outside `skills/` so `npx skills add` does not install them.
@@ -158,6 +176,20 @@ runs automatically before `npm publish`. The top-level `server.json` `version`
 is the registry entry's own version and is bumped whenever `server.json`
 changes. The live registry entry is 0.2.1; `server.json` is 0.2.2 (npm 0.1.2)
 and is published with the next npm release.
+
+To release a new npm version:
+
+1. Bump `version` in `package.json` and `packages[].version` in `server.json`,
+   and merge to `main`.
+2. Create a GitHub Release tagged `v<version>` (for example `v0.1.2`) on that
+   commit.
+3. `publish-npm.yml` checks that the tag matches `package.json`, runs the
+   tests, and publishes to npm with Trusted Publishing (OIDC, no token). It
+   ignores releases whose tag does not start with `v`.
+
+The MCP Registry entry is still published by hand: bumping
+`packages[].version` changes `server.json`, so also bump its top-level
+`version` and run `mcp-publisher publish`.
 
 ## Links
 

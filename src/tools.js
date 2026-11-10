@@ -112,7 +112,7 @@ export const TOOLS = [
         "max_chars": {
           "type": "integer",
           "minimum": 1,
-          "description": "Character budget for the returned page content; anything beyond it is cut off. Lower it to save context on long pages. When omitted, up to 50000 characters are returned."
+          "description": "Hard cap on the characters of returned page content. Longer pages are cut to fit, ending with \"...\" unless max_chars is 3 or less, and the output says how long the full page is. Lower it to save context on long pages. When omitted, up to 50000 characters are returned."
         },
         "live": {
           "type": "boolean",
