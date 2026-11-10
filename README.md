@@ -152,6 +152,20 @@ is the registry entry's own version and is bumped whenever `server.json`
 changes. `server.json` mirrors the live registry entry (0.2.1): publish again
 only when its content changes.
 
+To release a new npm version:
+
+1. Bump `version` in `package.json` and `packages[].version` in `server.json`,
+   and merge to `main`.
+2. Create a GitHub Release tagged `v<version>` (for example `v0.1.2`) on that
+   commit.
+3. `publish-npm.yml` checks that the tag matches `package.json`, runs the
+   tests, and publishes to npm with Trusted Publishing (OIDC, no token). It
+   ignores releases whose tag does not start with `v`.
+
+The MCP Registry entry is still published by hand: bumping
+`packages[].version` changes `server.json`, so also bump its top-level
+`version` and run `mcp-publisher publish`.
+
 ## Links
 
 - Docs: https://docs.keenable.ai/mcp-server
