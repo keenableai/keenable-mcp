@@ -14,9 +14,12 @@ const BRIDGE = fileURLToPath(new URL("../src/index.js", import.meta.url));
 const REMOTE_TOOL = { name: "echo", description: "Echo.", inputSchema: { type: "object" } };
 
 // A stateless Streamable HTTP MCP server that answers in plain JSON, like the
-// hosted one. `reject` makes it refuse every request the way a bad key does.
-function fakeRemote({ reject } = {}) {
+// hosted one. `reject` makes it refuse every request the way a bad key does,
+// `rpcError` makes it answer every request with a JSON-RPC error, and while
+// `hang` is set it accepts requests and never answers them.
+function fakeRemote({ reject, rpcError } = {}) {
   const seen = [];
+  const remote = { hang: false };
   const server = createServer(async (req, res) => {
     if (req.method !== "POST") return res.writeHead(405).end();
     let body = "";
@@ -27,7 +30,12 @@ function fakeRemote({ reject } = {}) {
       res.writeHead(401, { "content-type": "application/json" });
       return res.end(JSON.stringify({ error: "requires_auth", message: reject }));
     }
+    if (remote.hang) return;
     if (message.id === undefined) return res.writeHead(202).end();
+    if (rpcError) {
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ jsonrpc: "2.0", id: message.id, error: { code: -32000, message: rpcError } }));
+    }
     const results = {
       initialize: () => ({
         protocolVersion: message.params.protocolVersion,
@@ -41,7 +49,7 @@ function fakeRemote({ reject } = {}) {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({ jsonrpc: "2.0", id: message.id, result: results[message.method]() }));
   });
-  return {
+  return Object.assign(remote, {
     seen,
     async listen(port = 0) {
       server.listen(port, "127.0.0.1");
@@ -53,7 +61,7 @@ function fakeRemote({ reject } = {}) {
       server.close();
       await once(server, "close");
     },
-  };
+  });
 }
 
 // The bridge as a host sees it: `request` sends one JSON-RPC request and
@@ -83,7 +91,7 @@ function startBridge(env) {
   const request = (method, params = {}) =>
     new Promise((resolve, reject) => {
       const id = nextId++;
-      const timer = setTimeout(() => reject(new Error(`no response to ${method} within 10s\n${stderr}`)), 10_000);
+      const timer = setTimeout(() => reject(new Error(`no response to ${method} within 20s\n${stderr}`)), 20_000);
       waiting.set(id, (message) => {
         clearTimeout(timer);
         resolve(message);
@@ -172,6 +180,40 @@ test("a rejected API key reaches the model as the server's own message", async (
     const { result } = await call(bridge, { query: "hello" });
     assert.equal(result.isError, true);
     assert.equal(result.content[0].text, "Keenable request failed: Malformed API key. Check the API key.");
+  } finally {
+    bridge.stop();
+    await remote.close();
+  }
+});
+
+test("a remote that answers the handshake with an error still gets the fallbacks", async () => {
+  const remote = fakeRemote({ rpcError: "handshake refused" });
+  const port = await remote.listen();
+  const bridge = startBridge({ KEENABLE_MCP_URL: `http://127.0.0.1:${port}/mcp` });
+  try {
+    await bridge.initialize();
+    assert.deepEqual((await bridge.request("tools/list")).result.tools, JSON.parse(JSON.stringify(TOOLS)));
+    const { result } = await call(bridge, { query: "hello" });
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /^Keenable request failed: .*handshake refused/);
+  } finally {
+    bridge.stop();
+    await remote.close();
+  }
+});
+
+test("a handshake that never answers is given up on, and the next call starts a new one", async () => {
+  const remote = fakeRemote();
+  remote.hang = true;
+  const port = await remote.listen();
+  const bridge = startBridge({ KEENABLE_MCP_URL: `http://127.0.0.1:${port}/mcp` });
+  try {
+    const init = await bridge.initialize();
+    assert.equal(init.instructions, undefined);
+    assert.match(bridge.stderr(), /could not connect to .*timed out/i);
+
+    remote.hang = false;
+    assert.equal((await call(bridge, { query: "hello" })).result.content[0].text, '{"query":"hello"}');
   } finally {
     bridge.stop();
     await remote.close();

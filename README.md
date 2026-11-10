@@ -119,6 +119,12 @@ it. Every call tries the connection again, so nothing needs restarting once
 the problem is fixed. The reason is also written to stderr, which most clients
 keep in their MCP server log.
 
+The wrapper waits up to 10 seconds for the hosted server before starting
+without it. A session started that way does not get the hosted server's usage
+instructions; they are back the next time the client launches the wrapper. An
+invalid `KEENABLE_MCP_URL` is the one thing that stops it: it prints one line
+naming the value and exits.
+
 Behind an HTTP proxy, Node does not read `HTTPS_PROXY` by default. On Node
 22.21 or newer, add `"NODE_USE_ENV_PROXY": "1"` to the `env` block next to your
 proxy variables.

@@ -30,9 +30,10 @@ const REMOTE_URL =
 // Trimmed: a key pasted with a trailing newline is not a valid header value.
 const API_KEY = process.env.KEENABLE_API_KEY?.trim();
 
-// How long the host's `initialize` waits for the remote handshake before the
-// bridge answers with its built-in metadata instead.
-const STARTUP_TIMEOUT_MS = 10_000;
+// How long one handshake with the hosted server may take. At startup the
+// bridge then answers the host's `initialize` with its built-in metadata; on a
+// later request it returns the fallback for that request.
+const CONNECT_TIMEOUT_MS = 10_000;
 
 let remoteUrl;
 try {
@@ -48,17 +49,26 @@ if (API_KEY) requestInit.headers["X-API-Key"] = API_KEY;
 // One shared connection to the hosted server. A failed attempt is forgotten,
 // so the next request tries again: a laptop that was offline when the host
 // launched the bridge works as soon as the network is back.
+// A connection that closes later is forgotten the same way.
 let remote;
 function connectRemote() {
-  remote ??= (async () => {
+  const forget = () => {
+    if (remote === attempt) remote = undefined;
+  };
+  const attempt = (remote ??= (async () => {
     const client = new Client({ name: "keenable-mcp", version: VERSION }, { capabilities: {} });
-    await client.connect(new StreamableHTTPClientTransport(remoteUrl, { requestInit }));
+    await client.connect(new StreamableHTTPClientTransport(remoteUrl, { requestInit }), {
+      timeout: CONNECT_TIMEOUT_MS,
+    });
+    client.onclose = forget;
     return client;
   })().catch((err) => {
-    remote = undefined;
-    throw err;
-  });
-  return remote;
+    forget();
+    // Whatever stopped the handshake, it is not the hosted server's answer to
+    // the host's request, so it must not look like one (see isRemoteAnswer).
+    throw err instanceof McpError ? new Error(err.message) : err;
+  }));
+  return attempt;
 }
 
 // An error the hosted server returned for this request is passed through. A
@@ -116,24 +126,13 @@ function bridgeServer(instructions, remoteInfo) {
 
 async function main() {
   let client;
-  let timer;
   try {
-    client = await Promise.race([
-      connectRemote(),
-      new Promise((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error(`no answer within ${STARTUP_TIMEOUT_MS / 1000}s`)),
-          STARTUP_TIMEOUT_MS,
-        );
-      }),
-    ]);
+    client = await connectRemote();
   } catch (err) {
     console.error(
       `keenable-mcp: could not connect to ${remoteUrl.origin}: ${describeError(err)}. ` +
         "Starting anyway; each tool call will try again.",
     );
-  } finally {
-    clearTimeout(timer);
   }
   // getInstructions() exists in every MCP SDK release this package accepts
   // (^1.12.0); the optional call just keeps a broken install from crashing.
