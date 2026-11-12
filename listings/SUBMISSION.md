@@ -91,16 +91,16 @@ staff recommend for most plugins, then to the curated marketplace.
 - **Attestation:** the form asks the submitter to confirm they watched Cline
   install the server from `README.md` / `llms-install.md`. Do that test for real
   before ticking it.
-- **Attribution:** `llms-install.md` sets
-  `KEENABLE_MCP_URL=https://api.keenable.ai/mcp?keenable_title=cline` for the
-  npm bridge, and its signup link carries `utm_source=cline`. The guide is
-  titled for Cline and tells other clients to drop the `env` line, so their
-  installs are not counted as Cline.
-- **Trade-off:** `KEENABLE_MCP_URL` overrides the bridge's built-in endpoint,
-  so Cline installs stay pinned to `https://api.keenable.ai/mcp` even if a later
-  `@keenable/mcp` release changes its default. Moving Cline users to another
-  endpoint means editing `llms-install.md` and asking them to update their
-  config.
+- **Attribution:** `llms-install.md` connects Cline straight to the hosted
+  server (`"type": "streamableHttp"`, no npm bridge) at
+  `https://api.keenable.ai/mcp-public?keenable_title=cline`, or
+  `https://api.keenable.ai/mcp?keenable_title=cline` with an API key. Its
+  signup link carries `utm_source=cline`. The guide is titled for Cline and
+  tells other clients to drop `keenable_title`, so their installs are not
+  counted as Cline.
+- **Trade-off:** the URL is written into each user's config, so moving Cline
+  users to another endpoint means editing `llms-install.md` and asking them to
+  update their config.
 - **Status:** not submitted.
 
 ## skills.sh

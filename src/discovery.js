@@ -33,8 +33,10 @@ server.setRequestHandler(CallToolRequestSchema, (request) => ({
       type: "text",
       text:
         `This is the discovery build of "${request.params.name}". Tool execution is served ` +
-        `by the hosted Keenable MCP server at https://api.keenable.ai/mcp. Install the real ` +
-        `server with: npx -y @keenable/mcp`,
+        `by the hosted Keenable MCP server: connect your client to https://api.keenable.ai/mcp ` +
+        `over Streamable HTTP (Claude Code: claude mcp add keenable --transport http ` +
+        `https://api.keenable.ai/mcp). Clients that accept only a stdio command can run ` +
+        `npx -y @keenable/mcp instead.`,
     },
   ],
   isError: true,

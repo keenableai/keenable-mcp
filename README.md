@@ -50,8 +50,14 @@ it changes only when the server's does.
 
 ### Remote (recommended)
 
-Clients with remote MCP support connect to the URL directly. In Claude
-Desktop's Custom Connectors UI, paste the URL. Cursor takes this entry:
+Clients with remote MCP support connect to the URL directly. Claude Code is
+one command:
+
+```sh
+claude mcp add keenable --transport http https://api.keenable.ai/mcp --scope user
+```
+
+Cursor takes this entry:
 
 ```json
 {
@@ -66,13 +72,21 @@ Desktop's Custom Connectors UI, paste the URL. Cursor takes this entry:
 
 Other clients spell it differently:
 
-- **Claude Code**: run
-  `claude mcp add keenable --transport http https://api.keenable.ai/mcp`, or set
-  `"type": "http"` in `.mcp.json`.
+- **Claude Code**: the command above, or `"type": "http"` in `.mcp.json`
+  (`--scope project` writes that file for you).
+- **Claude Desktop, claude.ai and the Claude mobile apps**: add **Keenable Web
+  Search** from Claude's Connectors Directory, or add a custom connector with
+  `https://api.keenable.ai/mcp-oauth`, which signs you in to Keenable. Claude
+  Desktop's config file ignores `url` entries; use the
+  [stdio wrapper](#stdio-eg-claude-desktops-claude_desktop_configjson) there.
 - **Cline** (`cline_mcp_settings.json`): set `"type": "streamableHttp"`. Without
-  a type Cline falls back to the legacy SSE transport.
+  a type Cline falls back to the legacy SSE transport. See
+  [`llms-install.md`](llms-install.md).
 - **VS Code** (`.vscode/mcp.json`): the top-level key is `servers`, not
   `mcpServers`, and the type is `"http"`.
+- **Clients that fail on OAuth discovery**: use
+  `https://api.keenable.ai/mcp-public`. It is the same server without OAuth
+  metadata (and without the `mode` parameter).
 
 ### Stdio (e.g. Claude Desktop's `claude_desktop_config.json`)
 
@@ -96,7 +110,14 @@ That is all you need for keyless use.
 
 Keenable is keyless by default. To lift the hourly rate limit, pass a key.
 
-Remote:
+Claude Code:
+
+```sh
+claude mcp add keenable --transport http https://api.keenable.ai/mcp --scope user \
+  --header "X-API-Key: YOUR_KEY"
+```
+
+Remote (JSON):
 
 ```json
 {
