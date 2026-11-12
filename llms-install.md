@@ -5,46 +5,43 @@ install or use it.
 
 ## Install
 
-Add this to the MCP settings (`cline_mcp_settings.json` or the client's
-`mcpServers` config):
+The server is hosted, so Cline connects to its URL directly. Add this to
+`cline_mcp_settings.json`:
 
 ```json
 {
   "mcpServers": {
     "keenable": {
-      "command": "npx",
-      "args": ["-y", "@keenable/mcp"],
-      "env": { "KEENABLE_MCP_URL": "https://api.keenable.ai/mcp?keenable_title=cline" }
+      "type": "streamableHttp",
+      "url": "https://api.keenable.ai/mcp-public?keenable_title=cline"
     }
   }
 }
 ```
 
-That is the complete setup. `KEENABLE_MCP_URL` only tags the install as coming
-from Cline; leave it out and the server works the same. If you are installing
-for any client other than Cline, leave the `env` line out so the install is not
-counted as Cline. On first run `npx`
-downloads `@keenable/mcp`, which connects to the hosted server at `https://api.keenable.ai/mcp` and exposes two
-tools:
+That is the complete setup: nothing to install and no Node.js needed. Keep
+`"type": "streamableHttp"`; without it Cline falls back to the legacy SSE
+transport and cannot connect. `keenable_title=cline` only tags the install as
+coming from Cline; if you are installing for any client other than Cline, drop
+it so the install is not counted as Cline.
 
-- `search_web_pages` — live web search. Required arg `query`; optional `mode` (`pro` or `realtime`), `site`, `exclude_domains` (array of hosts, each covering its subdomains; up to 1,000 distinct hosts; the API rejects anything else with `invalid_filter`; full rules in the README's `exclude_domains` section), `published_after`/`published_before`, `acquired_after`/`acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards).
-- `fetch_page_content` — fetch a URL and return clean markdown. Required arg `url`; optional `max_chars` (default 50000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`.
+The server exposes two tools:
+
+- `search_web_pages` — live web search. Required arg `query`; optional `site`, `exclude_domains` (array of hosts, each covering its subdomains; up to 1,000 distinct hosts; the API rejects anything else with `invalid_filter`; full rules in the README's `exclude_domains` section), `published_after`/`published_before`, `acquired_after`/`acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). With an API key (below), it also takes `mode` (`pro` or `realtime`).
+- `fetch_page_content` — fetch a URL and return clean markdown. Required arg `url`; optional `max_chars` (default 20000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`.
 
 ## Optional: API key
 
-Keenable is keyless (1,000 requests/hour). To lift the cap, add an API key as an
-environment variable:
+Keenable is keyless (1,000 requests/hour). To lift the cap, send an API key in
+the `X-API-Key` header and use the `/mcp` URL:
 
 ```json
 {
   "mcpServers": {
     "keenable": {
-      "command": "npx",
-      "args": ["-y", "@keenable/mcp"],
-      "env": {
-        "KEENABLE_MCP_URL": "https://api.keenable.ai/mcp?keenable_title=cline",
-        "KEENABLE_API_KEY": "YOUR_KEY"
-      }
+      "type": "streamableHttp",
+      "url": "https://api.keenable.ai/mcp?keenable_title=cline",
+      "headers": { "X-API-Key": "YOUR_KEY" }
     }
   }
 }
@@ -62,5 +59,5 @@ To lift the keyless cap, [sign up](https://app.keenable.ai/signup?utm_source=cli
 
 ## Requirements
 
-- Node.js >= 18 (for `npx`).
+- A Cline version with Streamable HTTP support (`"type": "streamableHttp"`).
 - Outbound HTTPS access to `https://api.keenable.ai`.

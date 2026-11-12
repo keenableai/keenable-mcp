@@ -69,12 +69,21 @@ test("the Claude plugin icon is a square PNG of 512-2048 px", () => {
   assert.ok(w >= 512 && w <= 2048);
 });
 
-test("Cline install guide tags the bridge with keenable_title=cline and its link with utm", () => {
+test("Cline install guide connects to the URL with keenable_title=cline and tags its link with utm", () => {
   const guide = text("llms-install.md");
   assert.match(guide.split("\n")[0], /^# Installation guide for Cline$/);
-  const urls = guide.match(/"KEENABLE_MCP_URL": "([^"]+)"/g).map((m) => m.split('"')[3]);
-  assert.ok(urls.length >= 1);
-  for (const url of urls) assert.equal(titleOf(url), "cline");
+  const configs = [...guide.matchAll(/```json\n([\s\S]*?)```/g)].map((m) => JSON.parse(m[1]));
+  assert.equal(configs.length, 2);
+  for (const config of configs) {
+    const server = config.mcpServers.keenable;
+    assert.equal(server.type, "streamableHttp");
+    assert.equal(server.command, undefined);
+    assert.equal(new URL(server.url).origin, "https://api.keenable.ai");
+    assert.equal(titleOf(server.url), "cline");
+  }
+  assert.equal(new URL(configs[0].mcpServers.keenable.url).pathname, "/mcp-public");
+  assert.equal(new URL(configs[1].mcpServers.keenable.url).pathname, "/mcp");
+  assert.ok(configs[1].mcpServers.keenable.headers["X-API-Key"]);
   for (const link of webLinks(guide)) {
     assert.equal(new URL(link).searchParams.get("utm_source"), "cline", link);
     assert.equal(new URL(link).searchParams.get("utm_medium"), "registry", link);
