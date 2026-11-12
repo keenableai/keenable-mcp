@@ -6,6 +6,11 @@ MCP server for live web search and clean-markdown page fetch over the
 - **Hosted endpoint:** `https://api.keenable.ai/mcp` (Streamable HTTP)
 - **Tools:** `search_web_pages`, `fetch_page_content`
 - **Keyless by default** (1,000 requests/hour). An optional API key lifts the cap.
+- **Rate limits:** 10 calls per second per organization with a key (by default;
+  raise it from the console), and 10 per second plus 1,000 per hour per IP
+  address without one. Searches and fetches share the limit. The server's
+  instructions tell agents to send at most 5 calls at once and to wait out the
+  `Retry after` a rate-limit error states.
 
 The server is hosted, so most clients just point at the URL. For clients (or
 config paths) that only accept a stdio `command` there is a thin npm wrapper
@@ -16,7 +21,7 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 | Tool | Description |
 |---|---|
 | `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
-| `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 50000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`. |
+| `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 20000), `live`, `prompt` (extract only what you ask for), `session_id`, `output_format`. |
 
 ### `exclude_domains`
 
