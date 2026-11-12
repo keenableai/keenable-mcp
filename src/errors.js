@@ -9,17 +9,29 @@ function withCause(err) {
 }
 
 // The hosted server rejects a request with a JSON body such as
-// {"error":"requires_auth","message":"Malformed API key. ..."}; the MCP SDK
-// wraps that body in its own prefix. Only the server's message is useful.
+// {"error":"requires_auth","message":"Malformed API key. ...","code":"...",
+// "fix":"...","retryable":false}; the MCP SDK wraps that body in its own
+// prefix. Keep what tells the agent what to do next: the message, the code,
+// the fix and whether a retry can help, in the same shape as the hosted
+// server's own tool errors.
 function serverMessage(text) {
   const start = text.indexOf("{");
   if (start < 0) return undefined;
+  let body;
   try {
-    const { message } = JSON.parse(text.slice(start));
-    return typeof message === "string" && message ? message : undefined;
+    body = JSON.parse(text.slice(start));
   } catch {
     return undefined;
   }
+  const { message, code, fix, retryable } = body ?? {};
+  if (typeof message !== "string" || !message) return undefined;
+  return [
+    typeof code === "string" && code ? `${message} (${code})` : message,
+    typeof fix === "string" && fix && `Fix: ${fix}`,
+    typeof retryable === "boolean" && `Retryable: ${retryable ? "yes" : "no"}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function describeError(err) {
