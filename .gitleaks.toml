@@ -228,3 +228,40 @@ id = "grafana-panel-ids"
 description = "Query-panel keys in exported Grafana dashboard JSON"
 regexTarget = "match"
 regexes = ['''key"?\s*:\s*"Q-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-''']
+
+# =============================================================================
+# Custom rules — gaps in the upstream ruleset
+# =============================================================================
+#
+# Add a rule here only for a credential shape the upstream rules demonstrably
+# miss, with the observation that proved it.
+
+# -----------------------------------------------------------------------------
+# Passwords inside database connection URIs.
+#
+# Observed in KEE-1380 (2026-11-12): a Cloud SQL `postgres` password sat in
+# keenable_content_core as `postgres://postgres:<hex>@127.0.0.1:...` in four
+# files, and CI never flagged it. gitleaks 8.30.1 has no rule for URI
+# credentials, and `generic-api-key` needs a key-like identifier plus high
+# entropy, so a hex password inside a URL slips through.
+#
+# Covers driver-qualified schemes (`postgresql+asyncpg://`, `jdbc:mysql://`)
+# and password-only userinfo (`redis://:pw@`). The captured group is the
+# password only (4+ characters). A value STARTING with `$`, `<` or `{` is a
+# reference or placeholder and never matches; `$` later in the value is fine.
+# The rule allowlist below holds only words that cannot be a real password
+# by intent (`password`, `example`); weak real defaults such as `admin` or
+# `root` are deliberately NOT allowlisted. `postgres` stays, for the common
+# local-dev `postgres:postgres@localhost` compose files.
+# -----------------------------------------------------------------------------
+[[rules]]
+id = "db-connection-uri-password"
+description = "Password inside a database connection URI"
+regex = '''(?i)\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|rediss?|amqps?|clickhouse)(?:\+[a-z0-9]+)?://[^:\s/@'"]*:([^@\s'"$<{][^@\s'"]{3,})@'''
+secretGroup = 1
+keywords = ["postgres", "mysql", "mariadb", "mongodb", "redis", "amqp", "clickhouse"]
+
+[[rules.allowlists]]
+description = "Documentation placeholders used as the password"
+regexTarget = "secret"
+regexes = ['''(?i)^(password|passwd|pass|pwd|secret|postgres|example|xxx+|\*+)$''']

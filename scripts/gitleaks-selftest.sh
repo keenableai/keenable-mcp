@@ -31,9 +31,11 @@ _id_head="AK";                        _id_tail="IAZZ7QWERTYUIOPASD"
 _sec_head="wJalr0utnFEMI2K7MDENG";    _sec_tail="BPxRfiCYzTESTKEY01"
 _jwt_head="eyJhbGciOiJIUzI1NiJ9";     _jwt_tail="eyJzdWIiOiIxIn0"
 _pem_kind="RSA PRIVATE"
+_dsn_scheme="postgres"; _dsn_mysql="mysql"; _dsn_pw_head="9f3c71e0a4";  _dsn_pw_tail="b82d55c6e1f0"
 FAKE_AWS_ID="${_id_head}${_id_tail}"
 FAKE_AWS_SECRET="${_sec_head}${_sec_tail}"
 FAKE_JWT="${_jwt_head}.${_jwt_tail}.qmXpDlOesRRhY6NnP0iZoZfM8vKQKmNCRkYQx0IqQZM"
+FAKE_DSN_PW="${_dsn_pw_head}${_dsn_pw_tail}"
 FAKE_PEM="-----BEGIN ${_pem_kind} KEY-----
 MIIEowIBAAKCAQEAx7Vn9pQ2mK4tRfL0sYbHcZ3jW8dEuNoP1aTgVmS6yXrBhCkQ
 -----END ${_pem_kind} KEY-----"
@@ -82,6 +84,15 @@ hit "modules/db/creds.tf"                "  password = \"var.$FAKE_AWS_SECRET\""
 # A credential does not become safe by sharing a line with a CIDR range.
 hit "gcp-foundation/deploy.sh"           "gcloud compute --ranges=10.0.0.0/20 --key=\"$FAKE_AWS_SECRET\""
 
+# A password inside a database URI. No upstream rule sees it (KEE-1380: a
+# hex password in a postgres:// URL sat in four files unflagged).
+hit "service/config/gcp.yaml"            "  url: \"${_dsn_scheme}://postgres:${FAKE_DSN_PW}@127.0.0.1:15432/stats\""
+hit "scripts/dev.sh"                     "export DB_URL=${_dsn_scheme}ql://app:${FAKE_DSN_PW}@db.internal:5432/app"
+hit "app/settings.py"                    "DB = \"${_dsn_scheme}ql+asyncpg://app:${FAKE_DSN_PW}@db:5432/app\""
+hit "deploy/redis.yaml"                  "  url: redis://:${FAKE_DSN_PW}@redis:6379/0"
+hit "deploy/mysql.env"                   "DSN=${_dsn_mysql}://app:Xk9\$Lp${_dsn_pw_tail}@db:3306/app"
+hit "docker/compose.yaml"                "  DATABASE_URL: ${_dsn_scheme}://app:admin@db:5432/app"
+
 # --- must be SILENT ----------------------------------------------------------
 # Each is a false positive actually observed in the 2026-08-29 reconnaissance
 # scan, plus one case (test_annotated) proving the inline-exemption mechanism
@@ -99,6 +110,10 @@ miss "gcp-foundation/LOG.md"                   'gcloud services vpc-peerings con
 # the scheme is irrelevant to what is being tested (curl-auth-header fires on
 # the -H argument) and a cleartext URL in a committed file is its own smell.
 miss "ks_triton_operator/README.md"            '  curl https://triton.i.keenable.ai:8000/v2/health/ready -H "x-api-key: YOUR_API_KEY"'
+# Database URIs whose password is a reference or a placeholder.
+miss "deploy/README-secrets.md"                '  --from-literal=url="postgres://postgres:${PW}@127.0.0.1:15432/stats"'
+miss "docs/setup.md"                           '  DATABASE_URL=postgresql://user:password@localhost:5432/app'
+miss "docs/local.md"                           '  DATABASE_URL=postgres://app:<password>@localhost/app'
 miss "ytsaurus-test-eksctl/cluster.yaml"       '    remoteAccessSecurityGroup: "sg-0a1b2c3d4e5f60718"'
 miss "charts/milvus/charts/kafka/NOTES.txt"    "$FAKE_PEM"
 
