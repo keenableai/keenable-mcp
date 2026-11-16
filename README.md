@@ -170,6 +170,7 @@ search logic in this package; the index and tools live behind
 
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
 - `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`).
+- `KEENABLE_NO_CLIENT_ID` — set to any non-empty value to turn off the anonymous client ID (below).
 
 If the hosted server can't be reached when the wrapper starts (no network, a
 rejected API key), it still starts: it lists its built-in copy of the tools,
@@ -187,6 +188,28 @@ naming the value and exits.
 Behind an HTTP proxy, Node does not read `HTTPS_PROXY` by default. On Node
 22.21 or newer, add `"NODE_USE_ENV_PROXY": "1"` to the `env` block next to your
 proxy variables.
+
+### Anonymous client ID
+
+Without an API key, the hosted server issues the wrapper an anonymous client
+ID, so keyless traffic can be told apart by an identifier the server issued
+rather than by address or user agent. The server sends it in the
+`X-Keenable-Client` response header; the wrapper sends it back in the same
+header on later requests and replaces it whenever the server sends a new one.
+
+- **What it is:** an opaque token of up to 128 characters. It identifies an
+  installation, not a person, and carries no personal data. It is not a
+  credential and grants nothing.
+- **Where it lives:** `keenable/client-id` in your config directory:
+  `$XDG_CONFIG_HOME` if set to an absolute path, otherwise `%APPDATA%` on
+  Windows and `~/.config` elsewhere. The Keenable SDKs use the same file, so
+  one machine keeps one ID. If the file can't be written, the ID lasts only
+  until the wrapper exits.
+- **With an API key:** not used. The wrapper neither sends, reads nor stores it.
+- **Turn it off:** set `KEENABLE_NO_CLIENT_ID=1` in the wrapper's `env` block.
+  The wrapper then never reads, writes or sends an ID. To get a new ID, stop
+  every running wrapper, delete the file and start them again: a running
+  wrapper keeps the ID it loaded.
 
 ## Development
 

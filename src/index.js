@@ -19,6 +19,14 @@ import {
 import { createRequire } from "node:module";
 import { serverInfo } from "./metadata.js";
 import { bridgeUserAgent } from "./client-agent.js";
+import {
+  CLIENT_ID_HEADER,
+  captureClientId,
+  clientIdEnabled,
+  clientIdPath,
+  loadClientId,
+  saveClientId,
+} from "./client-id.js";
 import { describeError } from "./errors.js";
 import { TOOLS } from "./tools.js";
 
@@ -45,6 +53,22 @@ try {
 
 const requestInit = { headers: { "User-Agent": bridgeUserAgent(VERSION) } };
 if (API_KEY) requestInit.headers["X-API-Key"] = API_KEY;
+
+// Keyless calls carry the anonymous client ID the hosted server issued (see
+// client-id.js). The transport takes a `fetch` option only in newer SDK
+// releases, but every accepted release ends up calling the global fetch, so
+// that is where the response header is read.
+if (clientIdEnabled(process.env, API_KEY)) {
+  const file = clientIdPath();
+  let clientId = loadClientId(file);
+  if (clientId) requestInit.headers[CLIENT_ID_HEADER] = clientId;
+  globalThis.fetch = captureClientId(globalThis.fetch, remoteUrl.origin, (id) => {
+    if (id === clientId) return;
+    clientId = id;
+    requestInit.headers[CLIENT_ID_HEADER] = id;
+    saveClientId(file, id);
+  });
+}
 
 // One shared connection to the hosted server. A failed attempt is forgotten,
 // so the next request tries again: a laptop that was offline when the host

@@ -1,12 +1,15 @@
 // Runs the real bridge (src/index.js) over stdio against a local stand-in for
 // the hosted server, so no test touches the network.
 
-import { test } from "node:test";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { once } from "node:events";
 import { fileURLToPath } from "node:url";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { SERVER_METADATA, SERVER_NAME } from "../src/metadata.js";
 import { TOOLS } from "../src/tools.js";
 
@@ -16,11 +19,13 @@ const REMOTE_TOOL = { name: "echo", description: "Echo.", inputSchema: { type: "
 // A stateless Streamable HTTP MCP server that answers in plain JSON, like the
 // hosted one. `reject` makes it refuse every request the way a bad key does,
 // `rpcError` makes it answer every request with a JSON-RPC error, and while
-// `hang` is set it accepts requests and never answers them.
-function fakeRemote({ reject, rpcError } = {}) {
+// `hang` is set it accepts requests and never answers them. `issue` is the
+// X-Keenable-Client value it puts on a response to a request that has none.
+function fakeRemote({ reject, rpcError, issue } = {}) {
   const seen = [];
   const remote = { hang: false };
   const server = createServer(async (req, res) => {
+    if (issue && !req.headers["x-keenable-client"]) res.setHeader("X-Keenable-Client", issue);
     if (req.method !== "POST") return res.writeHead(405).end();
     let body = "";
     for await (const chunk of req) body += chunk;
@@ -64,13 +69,28 @@ function fakeRemote({ reject, rpcError } = {}) {
   });
 }
 
+// Every bridge gets a config dir under here, so no test reads or writes the
+// real client-id file.
+const CONFIG_ROOT = mkdtempSync(path.join(tmpdir(), "keenable-mcp-test-"));
+after(() => rmSync(CONFIG_ROOT, { recursive: true, force: true }));
+const configDir = () => mkdtempSync(path.join(CONFIG_ROOT, "config-"));
+const clientIdFile = (dir) => path.join(dir, "keenable", "client-id");
+
 // The bridge as a host sees it: `request` sends one JSON-RPC request and
 // resolves with its response.
 function startBridge(env) {
   const child = spawn(process.execPath, [BRIDGE], {
     stdio: ["pipe", "pipe", "pipe"],
-    // A proxy configured for the machine must not swallow the loopback calls.
-    env: { ...process.env, NO_PROXY: "127.0.0.1", no_proxy: "127.0.0.1", KEENABLE_API_KEY: "", ...env },
+    env: {
+      ...process.env,
+      // A proxy configured for the machine must not swallow the loopback calls.
+      NO_PROXY: "127.0.0.1",
+      no_proxy: "127.0.0.1",
+      KEENABLE_API_KEY: "",
+      KEENABLE_NO_CLIENT_ID: "",
+      XDG_CONFIG_HOME: configDir(),
+      ...env,
+    },
   });
   const waiting = new Map();
   let buffer = "";
@@ -225,4 +245,136 @@ test("an invalid KEENABLE_MCP_URL exits with a one-line explanation", async () =
   const [code] = await bridge.exited;
   assert.equal(code, 1);
   assert.equal(bridge.stderr().trim(), "keenable-mcp: KEENABLE_MCP_URL is not a valid URL: not a url");
+});
+
+// What each request the fake remote saw carried as its client ID.
+const clientIds = (remote) => remote.seen.map((r) => r.headers["x-keenable-client"]);
+
+test("keyless: an ID the server issues is sent on later requests and saved", async () => {
+  const remote = fakeRemote({ issue: "issued-1.A_b" });
+  const port = await remote.listen();
+  const dir = configDir();
+  const bridge = startBridge({ KEENABLE_MCP_URL: `http://127.0.0.1:${port}/mcp`, XDG_CONFIG_HOME: dir });
+  try {
+    await bridge.initialize();
+    await call(bridge, { query: "hello" });
+    const ids = clientIds(remote);
+    assert.equal(ids[0], undefined);
+    assert.equal(ids.at(-1), "issued-1.A_b");
+    assert.equal(remote.seen.at(-1).method, "tools/call");
+    assert.equal(readFileSync(clientIdFile(dir), "utf8"), "issued-1.A_b\n");
+    if (process.platform !== "win32") {
+      assert.equal(statSync(clientIdFile(dir)).mode & 0o777, 0o600);
+      assert.equal(statSync(path.dirname(clientIdFile(dir))).mode & 0o777, 0o700);
+    }
+    assert.deepEqual(readdirSync(path.dirname(clientIdFile(dir))), ["client-id"]);
+    assert.equal(bridge.stderr(), "");
+  } finally {
+    bridge.stop();
+    await remote.close();
+  }
+});
+
+test("keyless: a stored ID is sent from the first request", async () => {
+  const remote = fakeRemote();
+  const port = await remote.listen();
+  const dir = configDir();
+  mkdirSync(path.dirname(clientIdFile(dir)), { recursive: true });
+  writeFileSync(clientIdFile(dir), "  stored-id\n");
+  const bridge = startBridge({ KEENABLE_MCP_URL: `http://127.0.0.1:${port}/mcp`, XDG_CONFIG_HOME: dir });
+  try {
+    await bridge.initialize();
+    await call(bridge, { query: "hello" });
+    assert.ok(remote.seen.length >= 3);
+    assert.deepEqual([...new Set(clientIds(remote))], ["stored-id"]);
+    assert.equal(readFileSync(clientIdFile(dir), "utf8"), "  stored-id\n");
+  } finally {
+    bridge.stop();
+    await remote.close();
+  }
+});
+
+test("keyless: an ID that cannot be saved is still used for the session", async () => {
+  const remote = fakeRemote({ issue: "memory-only" });
+  const port = await remote.listen();
+  const dir = configDir();
+  // A file where the directory should be: every write under it fails.
+  writeFileSync(path.join(dir, "keenable"), "");
+  const bridge = startBridge({ KEENABLE_MCP_URL: `http://127.0.0.1:${port}/mcp`, XDG_CONFIG_HOME: dir });
+  try {
+    await bridge.initialize();
+    assert.equal((await call(bridge, { query: "hello" })).result.content[0].text, '{"query":"hello"}');
+    assert.equal(clientIds(remote).at(-1), "memory-only");
+    assert.equal(bridge.stderr(), "");
+  } finally {
+    bridge.stop();
+    await remote.close();
+  }
+});
+
+test("with an API key no client ID is sent, read or stored", async () => {
+  const remote = fakeRemote({ issue: "issued-to-keyed" });
+  const port = await remote.listen();
+  const dir = configDir();
+  mkdirSync(path.dirname(clientIdFile(dir)), { recursive: true });
+  writeFileSync(clientIdFile(dir), "stored-id\n");
+  const bridge = startBridge({
+    KEENABLE_MCP_URL: `http://127.0.0.1:${port}/mcp`,
+    KEENABLE_API_KEY: "key-123",
+    XDG_CONFIG_HOME: dir,
+  });
+  try {
+    await bridge.initialize();
+    await call(bridge, { query: "hello" });
+    await call(bridge, { query: "again" });
+    assert.deepEqual([...new Set(clientIds(remote))], [undefined]);
+    assert.equal(readFileSync(clientIdFile(dir), "utf8"), "stored-id\n");
+  } finally {
+    bridge.stop();
+    await remote.close();
+  }
+});
+
+test("KEENABLE_NO_CLIENT_ID turns the client ID off", async () => {
+  const remote = fakeRemote({ issue: "issued-anyway" });
+  const port = await remote.listen();
+  const dir = configDir();
+  const stored = configDir();
+  mkdirSync(path.dirname(clientIdFile(stored)), { recursive: true });
+  writeFileSync(clientIdFile(stored), "stored-id\n");
+  const url = `http://127.0.0.1:${port}/mcp`;
+  const fresh = startBridge({ KEENABLE_MCP_URL: url, KEENABLE_NO_CLIENT_ID: "1", XDG_CONFIG_HOME: dir });
+  const existing = startBridge({ KEENABLE_MCP_URL: url, KEENABLE_NO_CLIENT_ID: "1", XDG_CONFIG_HOME: stored });
+  try {
+    for (const bridge of [fresh, existing]) {
+      await bridge.initialize();
+      await call(bridge, { query: "hello" });
+      await call(bridge, { query: "again" });
+    }
+    assert.deepEqual([...new Set(clientIds(remote))], [undefined]);
+    assert.equal(existsSync(path.join(dir, "keenable")), false);
+    assert.equal(readFileSync(clientIdFile(stored), "utf8"), "stored-id\n");
+  } finally {
+    fresh.stop();
+    existing.stop();
+    await remote.close();
+  }
+});
+
+test("keyless: a malformed ID from the server is ignored", async () => {
+  for (const issue of ["has space", "semi;colon", "a".repeat(129)]) {
+    const remote = fakeRemote({ issue });
+    const port = await remote.listen();
+    const dir = configDir();
+    const bridge = startBridge({ KEENABLE_MCP_URL: `http://127.0.0.1:${port}/mcp`, XDG_CONFIG_HOME: dir });
+    try {
+      await bridge.initialize();
+      assert.equal((await call(bridge, { query: "hello" })).result.content[0].text, '{"query":"hello"}');
+      assert.deepEqual([...new Set(clientIds(remote))], [undefined]);
+      assert.equal(existsSync(path.join(dir, "keenable")), false);
+    } finally {
+      bridge.stop();
+      await remote.close();
+    }
+  }
 });
