@@ -42,17 +42,10 @@ export function refuseRedirects(fetch) {
     const response = await fetch(input, { ...init, redirect: "manual" });
     if (!REDIRECT_STATUSES.has(response.status)) return response;
     await response.body?.cancel().catch(() => {});
-    // Without a usable Location header the status alone is enough to refuse.
-    let target = "another address";
-    const location = response.headers.get("location");
-    if (location) {
-      try {
-        const from = typeof input === "string" || input instanceof URL ? input : input.url;
-        target = new URL(location, from).origin;
-      } catch {}
-    }
+    // The target is not named: Location is the server's text, and a server
+    // that was sent the key could put it in the host name.
     throw new Error(
-      `the server answered with a redirect (${response.status}) to ${target}, which was not followed; ` +
+      `the server answered with a redirect (${response.status}), which was not followed; ` +
         "set KEENABLE_MCP_URL to the server's final address",
     );
   };

@@ -247,7 +247,7 @@ for (const status of [301, 302, 303, 307, 308]) {
       methods.push(req.method);
       req.resume();
       // Another origin (a different port and host name), and the same origin.
-      const location = req.url === "/same" ? "/mcp" : `http://localhost:${targetPort}/mcp?token=hidden`;
+      const location = req.url === "/same" ? "/mcp" : `http://key-123.localhost:${targetPort}/mcp?token=hidden`;
       res.writeHead(status, { location }).end();
     });
     redirector.listen(0, "127.0.0.1");
@@ -260,10 +260,9 @@ for (const status of [301, 302, 303, 307, 308]) {
           await bridge.initialize();
           const { result } = await call(bridge, { query: "hello" });
           assert.equal(result.isError, true);
-          const origin = path === "/same" ? `http://127.0.0.1:${port}` : `http://localhost:${targetPort}`;
           assert.equal(
             result.content[0].text,
-            `Keenable request failed: the server answered with a redirect (${status}) to ${origin}, ` +
+            `Keenable request failed: the server answered with a redirect (${status}), ` +
               "which was not followed; set KEENABLE_MCP_URL to the server's final address",
           );
           assert.match(bridge.stderr(), /could not connect to .*answered with a redirect/);

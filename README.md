@@ -173,7 +173,7 @@ search logic in this package; the index and tools live behind
 
 The wrapper sends the API key to that address only. If the server answers with
 a redirect, the wrapper does not follow it and the call fails with a message
-naming where the redirect pointed; set `KEENABLE_MCP_URL` to the final address.
+saying so (the target is not shown); set `KEENABLE_MCP_URL` to the final address.
 
 If the hosted server can't be reached when the wrapper starts (no network, a
 rejected API key), it still starts: it lists its built-in copy of the tools,

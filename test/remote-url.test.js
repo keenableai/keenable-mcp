@@ -71,21 +71,22 @@ test("refuseRedirects asks fetch not to follow and passes other responses throug
   }
 });
 
-test("refuseRedirects turns a redirect into an error naming only the target's origin", async () => {
+test("refuseRedirects turns a redirect into an error that never names the target", async () => {
   const redirect = (location) => async () =>
     new Response(null, { status: 307, headers: location === undefined ? {} : { location } });
-  const message = (origin) =>
-    `the server answered with a redirect (307) to ${origin}, which was not followed; ` +
+  const message =
+    "the server answered with a redirect (307), which was not followed; " +
     "set KEENABLE_MCP_URL to the server's final address";
-  const cases = [
-    ["https://evil.example/steal?key=1", "https://evil.example"],
-    ["http://example.com/mcp", "http://example.com"],
-    ["/elsewhere", "https://example.com"],
-    [undefined, "another address"],
+  const locations = [
+    "https://evil.example/steal?key=1",
+    "https://key-123.evil.example/",
+    "http://example.com/mcp",
+    "/elsewhere",
+    undefined,
   ];
   for (const input of ["https://example.com/mcp", new URL("https://example.com/mcp")]) {
-    for (const [location, origin] of cases) {
-      await assert.rejects(refuseRedirects(redirect(location))(input, {}), { message: message(origin) });
+    for (const location of locations) {
+      await assert.rejects(refuseRedirects(redirect(location))(input, {}), { message });
     }
   }
 });
