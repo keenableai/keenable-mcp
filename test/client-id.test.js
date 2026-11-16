@@ -108,7 +108,11 @@ test("a failed save reports false, throws nothing and leaves no temp file", (t) 
 test("a read-only directory is not written to", { skip: process.platform === "win32" || process.getuid?.() === 0 }, (t) => {
   const dir = tempDir(t);
   chmodSync(dir, 0o500);
-  t.after(() => chmodSync(dir, 0o700));
+  t.after(() => {
+    try {
+      chmodSync(dir, 0o700);
+    } catch {}
+  });
   assert.equal(saveClientId(path.join(dir, "client-id"), "tok"), false);
   assert.equal(saveClientId(path.join(dir, "keenable", "client-id"), "tok"), false);
 });

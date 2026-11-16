@@ -207,8 +207,9 @@ header on later requests and replaces it whenever the server sends a new one.
   until the wrapper exits.
 - **With an API key:** not used. The wrapper neither sends, reads nor stores it.
 - **Turn it off:** set `KEENABLE_NO_CLIENT_ID=1` in the wrapper's `env` block.
-  The wrapper then never reads, writes or sends an ID. Deleting the file gets
-  you a new ID on the next keyless request.
+  The wrapper then never reads, writes or sends an ID. To get a new ID, stop
+  every running wrapper, delete the file and start them again: a running
+  wrapper keeps the ID it loaded.
 
 ## Development
 
