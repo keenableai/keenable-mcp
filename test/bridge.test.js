@@ -25,7 +25,7 @@ function fakeRemote({ reject, rpcError } = {}) {
     let body = "";
     for await (const chunk of req) body += chunk;
     const message = JSON.parse(body);
-    seen.push({ method: message.method, headers: req.headers });
+    seen.push({ method: message.method, httpMethod: req.method, headers: req.headers });
     if (reject) {
       res.writeHead(401, { "content-type": "application/json" });
       return res.end(JSON.stringify({ error: "requires_auth", message: reject }));
@@ -134,6 +134,7 @@ test("forwards the remote's instructions, metadata, tools and tool results", asy
     assert.equal(result.isError, undefined);
     assert.equal(result.content[0].text, '{"query":"hello"}');
 
+    assert.deepEqual([...new Set(remote.seen.map((r) => r.httpMethod))], ["POST"]);
     const sent = remote.seen.find((r) => r.method === "tools/call").headers;
     assert.match(sent["user-agent"], /^keenable-mcp\/\S+ \(test-host\/1\.0\)$/);
     assert.equal(sent["x-api-key"], "key-123");
@@ -220,9 +221,82 @@ test("a handshake that never answers is given up on, and the next call starts a 
   }
 });
 
+for (const [name, key] of [["empty", ""], ["whitespace-only", " \t\n"]]) {
+  test(`an ${name} KEENABLE_API_KEY sends no X-API-Key header`, async () => {
+    const remote = fakeRemote();
+    const port = await remote.listen();
+    const bridge = startBridge({ KEENABLE_MCP_URL: `http://127.0.0.1:${port}/mcp`, KEENABLE_API_KEY: key });
+    try {
+      await bridge.initialize();
+      assert.equal((await call(bridge, { query: "hello" })).result.isError, undefined);
+      assert.ok(remote.seen.some((r) => r.method === "tools/call"));
+      for (const { headers } of remote.seen) assert.equal("x-api-key" in headers, false);
+    } finally {
+      bridge.stop();
+      await remote.close();
+    }
+  });
+}
+
+for (const status of [301, 302, 303, 307, 308]) {
+  test(`a ${status} redirect is refused and the API key is not sent on`, async () => {
+    const target = fakeRemote();
+    const targetPort = await target.listen();
+    const methods = [];
+    const redirector = createServer((req, res) => {
+      methods.push(req.method);
+      req.resume();
+      // Another origin (a different port and host name), and the same origin.
+      const location = req.url === "/same" ? "/mcp" : `http://localhost:${targetPort}/mcp?token=hidden`;
+      res.writeHead(status, { location }).end();
+    });
+    redirector.listen(0, "127.0.0.1");
+    await once(redirector, "listening");
+    const { port } = redirector.address();
+    try {
+      for (const path of ["/mcp", "/same"]) {
+        const bridge = startBridge({ KEENABLE_MCP_URL: `http://127.0.0.1:${port}${path}`, KEENABLE_API_KEY: "key-123" });
+        try {
+          await bridge.initialize();
+          const { result } = await call(bridge, { query: "hello" });
+          assert.equal(result.isError, true);
+          const origin = path === "/same" ? `http://127.0.0.1:${port}` : `http://localhost:${targetPort}`;
+          assert.equal(
+            result.content[0].text,
+            `Keenable request failed: the server answered with a redirect (${status}) to ${origin}, ` +
+              "which was not followed; set KEENABLE_MCP_URL to the server's final address",
+          );
+          assert.match(bridge.stderr(), /could not connect to .*answered with a redirect/);
+          assert.doesNotMatch(bridge.stderr() + result.content[0].text, /hidden|key-123/);
+        } finally {
+          bridge.stop();
+        }
+      }
+      assert.deepEqual(target.seen, []);
+      assert.deepEqual([...new Set(methods)], ["POST"]);
+    } finally {
+      redirector.closeAllConnections?.();
+      redirector.close();
+      await target.close();
+    }
+  });
+}
+
 test("an invalid KEENABLE_MCP_URL exits with a one-line explanation", async () => {
-  const bridge = startBridge({ KEENABLE_MCP_URL: "not a url" });
-  const [code] = await bridge.exited;
-  assert.equal(code, 1);
-  assert.equal(bridge.stderr().trim(), "keenable-mcp: KEENABLE_MCP_URL is not a valid URL: not a url");
+  const cases = {
+    "not a url":
+      "KEENABLE_MCP_URL is not a valid URL. Set it to an https:// URL, or unset it to use the hosted Keenable server.",
+    "http://example.com/mcp?token=hidden":
+      "KEENABLE_MCP_URL must use https, got http://example.com (plain http is allowed only for localhost, " +
+      "127.0.0.1 and [::1]). Set it to an https:// URL, or unset it to use the hosted Keenable server.",
+    "https://user:hidden@example.com/mcp":
+      "KEENABLE_MCP_URL must not contain a user or password (host: example.com). " +
+      "Remove them and pass the key in KEENABLE_API_KEY.",
+  };
+  for (const [value, message] of Object.entries(cases)) {
+    const bridge = startBridge({ KEENABLE_MCP_URL: value });
+    const [code] = await bridge.exited;
+    assert.equal(code, 1);
+    assert.equal(bridge.stderr().trim(), `keenable-mcp: ${message}`);
+  }
 });
