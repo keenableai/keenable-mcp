@@ -20,29 +20,53 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 
 | Tool | Description |
 |---|---|
-| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
+| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `include_domains`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). `site` is deprecated and removed on 2027-02-15: use `include_domains`. |
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 20000), `live`, `prompt` (extract only what you ask for; a page too long for a prompt fails with `prompt_input_too_long`, so fetch it again without `prompt`), `session_id`, `output_format`. Errors say whether a retry can help (`Retryable: yes` or `no`). |
+
+### `include_domains`
+
+Use `include_domains` (array) to search only some sites. The skill and
+`llms-install.md` point here.
+
+- Hosts only, such as `github.com`. Each host covers its subdomains
+  (`reddit.com` covers `old.reddit.com`).
+- A public suffix written with a leading dot, such as `.gov`, keeps every
+  host under it.
+- Up to 50 distinct hosts, 100 entries as sent, 2,048 bytes per entry.
+- Entries are cleaned up and rejected by the same rules as `exclude_domains`
+  (below); a longer list is also rejected with `invalid_filter`.
+- `exclude_domains` still applies within the list: `include_domains`
+  `["github.com"]` with `exclude_domains` `["gist.github.com"]` keeps
+  github.com but not gists.
+- Fewer than `max_results` can come back, and none when no indexed page on
+  these hosts matches.
+- `site` is deprecated and removed on 2027-02-15. Until then, a `site`
+  without a path is added to `include_domains`, a `site` with a path cannot
+  be combined with `include_domains`, and every response to a request that
+  sends `site` carries a warning.
 
 ### `exclude_domains`
 
-Use `site` for one site and `exclude_domains` (array) to drop sites from the
-results. This section is the one place the rules are written down; the skill
-and `llms-install.md` point here.
+Use `exclude_domains` (array) to drop sites from the results. The skill and
+`llms-install.md` point here.
 
 - Hosts only, such as `example.com`. Each host covers its subdomains
   (`yahoo.com` covers `finance.yahoo.com`). Hosting suffixes such as
   `github.io` or `blogspot.com` are accepted.
+- A public suffix written with a leading dot, such as `.gov`, excludes every
+  host under it.
 - Up to 1,000 distinct hosts, 2,000 entries as sent, 2,048 bytes per entry.
 - The server cleans up surrounding spaces, case, an `http://` or `https://`
   scheme, a leading `www.`, a port, a trailing `/` or `.`, and a query string
   or fragment.
 - It rejects anything else with a 400 `invalid_filter` error whose `field`,
   `value` and `reason` name the entry (or the count, for a limit): an empty
-  entry, a path, another scheme, a suffix such as `.com` or `com`, a
-  wildcard, an IP address, a `user@` prefix, or an invalid host.
+  entry, a path, another scheme, a bare suffix such as `com` or `co.uk`, a
+  wildcard such as `*.example.com`, an IP address, a `user@` prefix, or an
+  invalid host.
 - If every result is excluded, the response can be empty.
 
-The hosted server is the validator; the npm wrapper passes the list through
+The hosted server is the validator; the npm wrapper passes both lists through
 unchanged. `src/tools.js` copies the server's own parameter text verbatim, so
 it changes only when the server's does.
 

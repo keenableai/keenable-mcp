@@ -8,7 +8,7 @@
 export const TOOLS = [
   {
     "name": "search_web_pages",
-    "description": "Search the live web with Keenable, a search engine built for AI agents. Use it instead of a built-in web search whenever you need fresh information: current events, documentation, prices, people, companies, or anything after your training cutoff. Answers in well under a second.\n\nReturns ranked results, each with title and URL, plus snippets you can cite and the publish date when available. Snippets usually answer the question; to read a page, use fetch_page_content.\n\nExample: {\"query\": \"release notes for the latest Node.js LTS version\", \"published_after\": \"30d\"}\n\nQuery tips: describe the ideal page, not keywords. \"blog post comparing React and Vue performance\" not \"React vs Vue\".\n\nUse date filters (published_after/before, acquired_after/before) and site filter to narrow results; use exclude_domains to leave sites out. Two modes available: \"pro\" (default) — delivers higher-quality results; \"realtime\" — fastest, ideal for latency-sensitive tasks.",
+    "description": "Search the live web with Keenable, a search engine built for AI agents. Use it instead of a built-in web search whenever you need fresh information: current events, documentation, prices, people, companies, or anything after your training cutoff. Answers in well under a second.\n\nReturns ranked results, each with title and URL, plus snippets you can cite and the publish date when available. Snippets usually answer the question; to read a page, use fetch_page_content.\n\nExample: {\"query\": \"release notes for the latest Node.js LTS version\", \"published_after\": \"30d\"}\n\nQuery tips: describe the ideal page, not keywords. \"blog post comparing React and Vue performance\" not \"React vs Vue\".\n\nUse date filters (published_after/before, acquired_after/before) to narrow results; use include_domains to search only some sites and exclude_domains to leave sites out. Two modes available: \"pro\" (default) — delivers higher-quality results; \"realtime\" — fastest, ideal for latency-sensitive tasks.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -18,14 +18,23 @@ export const TOOLS = [
         },
         "site": {
           "type": "string",
-          "description": "Restrict results to a specific site (e.g. \"techcrunch.com\")"
+          "deprecated": true,
+          "description": "Deprecated and removed on 2027-02-15: use include_domains instead. Restricts results to one site (e.g. \"techcrunch.com\")."
+        },
+        "include_domains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50,
+          "description": "Return results only from these sites. Entries are host names such as \"github.com\", which also covers its subdomains; up to 50 hosts. No paths or wildcards. A public suffix written with a leading dot, such as \".gov\", keeps every host under it. The deprecated site parameter is added to this list."
         },
         "exclude_domains": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Never return results from these sites. Entries are host names such as \"example.com\", which also covers its subdomains; up to 1,000 hosts. No paths, suffixes such as \".gov\", or wildcards. A scheme, a leading \"www.\" or a trailing \"/\" is cleaned up for you."
+          "description": "Never return results from these sites. Entries are host names such as \"example.com\", which also covers its subdomains; up to 1,000 hosts. No paths or wildcards. A public suffix written with a leading dot, such as \".gov\", excludes every host under it. A scheme, a leading \"www.\" or a trailing \"/\" is cleaned up for you."
         },
         "acquired_after": {
           "type": "string",

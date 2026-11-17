@@ -35,13 +35,15 @@ class SplitDomainsTest(unittest.TestCase):
 
 class BuildPayloadTest(unittest.TestCase):
     def test_empty_lists_are_omitted(self):
-        payload = search.build_payload("q", exclude_domains=[], site=None)
+        payload = search.build_payload("q", include_domains=[], exclude_domains=[], site=None)
         self.assertEqual(payload, {"query": "q", "mode": "pro"})
 
     def test_every_filter_passed_through(self):
         filters = {k: f"v-{k}" for k in search._PARAMS}
+        filters["include_domains"] = ["c.com", ".gov"]
         filters["exclude_domains"] = ["a.com", "b.com"]
         payload = search.build_payload("q", **filters)
+        self.assertEqual(payload["include_domains"], ["c.com", ".gov"])
         self.assertEqual(payload["exclude_domains"], ["a.com", "b.com"])
         self.assertEqual(payload, {"query": "q", "mode": "pro", **filters})
 
@@ -127,6 +129,44 @@ class RequestTest(unittest.TestCase):
             with self.subTest(flags=flags):
                 sent, _ = self._run(["q", *flags])
                 self.assertEqual(json.loads(sent[0].data)["exclude_domains"], expected)
+
+    def test_include_domain_reaches_body(self):
+        sent, _ = self._run([
+            "q", "--include-domain", "arxiv.org, nature.com", "--include-domain", ".gov",
+            "--include-domain", "arxiv.org", "--exclude-domain", "blog.arxiv.org",
+        ])
+        self.assertEqual(json.loads(sent[0].data), {
+            "query": "q",
+            "mode": "pro",
+            "include_domains": ["arxiv.org", "nature.com", ".gov"],
+            "exclude_domains": ["blog.arxiv.org"],
+        })
+
+    def test_blank_include_reaches_body(self):
+        cases = [
+            (["--include-domain", ""], [""]),
+            (["--include-domain", "a.com,"], ["a.com", ""]),
+        ]
+        for flags, expected in cases:
+            with self.subTest(flags=flags):
+                sent, _ = self._run(["q", *flags])
+                self.assertEqual(json.loads(sent[0].data)["include_domains"], expected)
+
+    def test_site_help_says_deprecated(self):
+        actions = {}
+        real_add = search.argparse.ArgumentParser.add_argument
+
+        def spy(parser, *names, **kwargs):
+            actions[names[0]] = kwargs
+            return real_add(parser, *names, **kwargs)
+
+        with mock.patch.object(search.argparse.ArgumentParser, "add_argument", spy):
+            search.parse_args(["q"])
+        self.assertTrue(
+            actions["--site"]["help"].startswith(
+                "Deprecated and removed on 2027-02-15: use --include-domain."
+            )
+        )
 
     def test_site_with_exclude_reaches_body(self):
         sent, _ = self._run(["q", "--site", "a.com", "--exclude-domain", "b.com"])

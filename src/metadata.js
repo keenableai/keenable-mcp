@@ -8,7 +8,7 @@ export const SERVER_NAME = "keenable-web-search";
 export const SERVER_METADATA = {
   title: "Keenable Web Search",
   description:
-    "Web search built for AI agents. Find current pages on any topic, narrowed by site and publish date, then read any URL as clean markdown or pull out only the part you need.",
+    "Web search built for AI agents. Find current pages on any topic, narrowed by domain and publish date, then read any URL as clean markdown or pull out only the part you need.",
   websiteUrl: "https://docs.keenable.ai/mcp-server",
   icons: [
     { src: "https://api.keenable.ai/favicon.svg", mimeType: "image/svg+xml", sizes: ["any"] },
