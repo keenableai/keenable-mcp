@@ -20,6 +20,7 @@ import { createRequire } from "node:module";
 import { serverInfo } from "./metadata.js";
 import { bridgeUserAgent } from "./client-agent.js";
 import { describeError } from "./errors.js";
+import { parseRemoteUrl, refuseRedirects } from "./remote-url.js";
 import { TOOLS } from "./tools.js";
 
 // package.json is the single source of the version; a release bumps it there.
@@ -37,11 +38,17 @@ const CONNECT_TIMEOUT_MS = 10_000;
 
 let remoteUrl;
 try {
-  remoteUrl = new URL(REMOTE_URL);
-} catch {
-  console.error(`keenable-mcp: KEENABLE_MCP_URL is not a valid URL: ${REMOTE_URL}`);
+  remoteUrl = parseRemoteUrl(REMOTE_URL);
+} catch (err) {
+  console.error(`keenable-mcp: ${err.message}`);
   process.exit(1);
 }
+
+// The API key goes to the configured address only. The MCP SDK's transport
+// calls the global fetch, and its older releases (this package accepts
+// ^1.12.0) follow redirects and take no fetch of their own, so the global one
+// is replaced for this process.
+globalThis.fetch = refuseRedirects(globalThis.fetch);
 
 const requestInit = { headers: { "User-Agent": bridgeUserAgent(VERSION) } };
 if (API_KEY) requestInit.headers["X-API-Key"] = API_KEY;

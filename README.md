@@ -169,7 +169,11 @@ search logic in this package; the index and tools live behind
 `https://api.keenable.ai/mcp`. Environment variables:
 
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
-- `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`).
+- `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`). It must be an `https://` URL; plain `http://` is accepted only for `localhost`, `127.0.0.1` and `[::1]`. A URL with a user or password is refused: the key belongs in `KEENABLE_API_KEY`.
+
+The wrapper sends the API key to that address only. If the server answers with
+a redirect, the wrapper does not follow it and the call fails with a message
+saying so (the target is not shown); set `KEENABLE_MCP_URL` to the final address.
 
 If the hosted server can't be reached when the wrapper starts (no network, a
 rejected API key), it still starts: it lists its built-in copy of the tools,
@@ -182,7 +186,7 @@ The wrapper waits up to 10 seconds for the hosted server before starting
 without it. A session started that way does not get the hosted server's usage
 instructions; they are back the next time the client launches the wrapper. An
 invalid `KEENABLE_MCP_URL` is the one thing that stops it: it prints one line
-naming the value and exits.
+saying what to change and exits.
 
 Behind an HTTP proxy, Node does not read `HTTPS_PROXY` by default. On Node
 22.21 or newer, add `"NODE_USE_ENV_PROXY": "1"` to the `env` block next to your
