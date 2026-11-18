@@ -56,7 +56,7 @@ export const TOOLS = [
         "max_results": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 100,
+          "maximum": 50,
           "description": "How many results to return. Ask for more when surveying a topic broadly, fewer for a quick lookup. When omitted, 10 results are returned."
         },
         "objective": {
