@@ -189,6 +189,15 @@ read or not. Pass `reader` to give a second person or task a separate reading
 position. Keyless connections list only
 `search_web_pages` and `fetch_page_content`.
 
+`create_monitor` takes `query` (required), `name`, `webhookUrl`,
+`includeDomains` and `excludeDomains`. To have each new result pushed to your
+server instead of pulled, pass `webhookUrl`, a public HTTPS address. The
+response returns the signing secret once, as `webhookSecret`: store it then,
+and treat it like any key pasted into a chat, because it sits in the
+transcript. Deliveries are signed under
+[Standard Webhooks](https://www.standardwebhooks.com); see
+[how to verify them](https://docs.keenable.ai/products/monitors#verify-a-webhook).
+
 The wrapper forwards these tools like the others; its built-in copy of the
 tools (used when the hosted server can't be reached) holds only the two search
 tools.
