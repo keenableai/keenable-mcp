@@ -172,11 +172,32 @@ submitted and its status.
 With an API key (or a Keenable sign-in on a remote connection), the server
 also lists four [Monitors](https://docs.keenable.ai/products/monitors) tools:
 `create_monitor`, `list_monitors`, `get_monitor_results` and `delete_monitor`.
-A monitor is a standing query: every newly crawled page that is news about its
-topic is kept as a result of that monitor. Monitors is on for every
-organization and free for now, with up to 100 active monitors per organization.
-To pause, resume, rename or change a monitor, start a run or read a run, use
-the [Monitors API](https://docs.keenable.ai/api-reference/monitors/create), the
+A monitor watches the web for you, in one of two kinds:
+
+- A **search monitor** is a standing query: every newly crawled page that is
+  news about its topic is kept as a result of that monitor.
+- A **page monitor** (`"type": "page"` on the Monitors API) watches one public
+  page, such as a competitor's pricing page, and reports when it changes in a
+  way that matters (`page.watch_for`, `page.sensitivity`), with a summary of
+  the change and a word-level diff.
+
+A monitor runs on a schedule: once, at an interval of 10 minutes or more
+(a page monitor checks hourly unless told otherwise), or on a cron expression
+in a time zone that runs at most every 10 minutes. It can be paused and
+resumed; a resumed monitor carries on at its next scheduled time without a
+catch-up run. With an `output_schema` (a supported subset of JSON Schema), a
+run also returns structured output in that shape.
+
+Monitors cost $2 per 1,000 runs: every completed run counts, including a page
+check that finds no change. An organization can have 20 active monitors by
+default, search and page monitors together;
+[contact sales](https://keenable.ai/console/talk-to-us?subject=monitors) to
+raise the limit. `create_monitor` creates search monitors, and
+`get_monitor_results` returns their pages. For everything else (creating a
+page monitor and reading its changes and version history, setting a schedule
+or an output schema, pausing, resuming, renaming or changing a monitor,
+starting a run or reading one), use the
+[Monitors API](https://docs.keenable.ai/api-reference/monitors/create), the
 SDKs or the CLI.
 
 A remote MCP server cannot push messages to a chat, so news is pulled:
