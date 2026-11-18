@@ -20,7 +20,7 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 
 | Tool | Description |
 |---|---|
-| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `objective` (two or three sentences on what the search is for, at most 1,000 characters), `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
+| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-100), `snippet_max_length` (180-10000), `session_id`, `objective` (two or three sentences on what the search is for, at most 1,000 characters), `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 20000), `live`, `prompt` (extract only what you ask for; a page too long for a prompt fails with `prompt_input_too_long`, so fetch it again without `prompt`), `session_id`, `output_format`. Errors say whether a retry can help (`Retryable: yes` or `no`). |
 
 ### `exclude_domains`
@@ -170,18 +170,23 @@ submitted and its status.
 ## Monitor tools
 
 With an API key (or a Keenable sign-in on a remote connection), the server
-also lists the [Monitors](https://docs.keenable.ai/products/monitors) tools:
-`whats_new`, `list_monitors`, `get_monitor`, `monitor_pages`,
-`create_monitor`, `update_monitor`, `delete_monitor`, `trigger_monitor` and
-`get_run`. A monitor is a standing query: every newly crawled page that is news
-about its topic is kept as a page of that monitor. Monitors is on for every
+also lists four [Monitors](https://docs.keenable.ai/products/monitors) tools:
+`create_monitor`, `list_monitors`, `get_monitor_results` and `delete_monitor`.
+A monitor is a standing query: every newly crawled page that is news about its
+topic is kept as a result of that monitor. Monitors is on for every
 organization and free for now, with up to 100 active monitors per organization.
+To pause, resume, rename or change a monitor, start a run or read a run, use
+the [Monitors API](https://docs.keenable.ai/api-reference/monitors/create), the
+SDKs or the CLI.
 
 A remote MCP server cannot push messages to a chat, so news is pulled:
-`whats_new` returns the pages a reader has not been given yet, each once, and
-the server remembers what was read, so a scheduled task that starts a new chat
-every hour still gets each page once. Pass `reader` to give a second person or
-task a separate reading position. Keyless connections list only
+`get_monitor_results` returns the results a reader has not been given yet,
+across all monitors or for one, each once, and the server remembers what was
+read, so a scheduled task that starts a new chat every hour still gets each
+result once. `peek: true` looks without marking results as read, and
+`includeSeen: true` with a `monitorId` pages through that monitor's results,
+read or not. Pass `reader` to give a second person or task a separate reading
+position. Keyless connections list only
 `search_web_pages` and `fetch_page_content`.
 
 The wrapper forwards these tools like the others; its built-in copy of the
