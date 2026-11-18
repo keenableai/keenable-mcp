@@ -20,7 +20,7 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 
 | Tool | Description |
 |---|---|
-| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
+| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `objective` (two or three sentences on what the search is for, at most 1,000 characters), `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 20000), `live`, `prompt` (extract only what you ask for; a page too long for a prompt fails with `prompt_input_too_long`, so fetch it again without `prompt`), `session_id`, `output_format`. Errors say whether a retry can help (`Retryable: yes` or `no`). |
 
 ### `exclude_domains`
@@ -29,17 +29,23 @@ Use `site` for one site and `exclude_domains` (array) to drop sites from the
 results. This section is the one place the rules are written down; the skill
 and `llms-install.md` point here.
 
-- Hosts only, such as `example.com`. Each host covers its subdomains
+- Hosts, such as `example.com`. Each host covers its subdomains
   (`yahoo.com` covers `finance.yahoo.com`). Hosting suffixes such as
-  `github.io` or `blogspot.com` are accepted.
+  `github.io` or `blogspot.com` are accepted as hosts.
+- A public suffix written with a leading dot, such as `.gov` or `.co.uk`,
+  excludes every host under it (`*.gov` means the same). The suffix must be on
+  the Public Suffix List, and it covers only hosts under it: `.gov` doesn't
+  exclude `gov.uk`.
 - Up to 1,000 distinct hosts, 2,000 entries as sent, 2,048 bytes per entry.
 - The server cleans up surrounding spaces, case, an `http://` or `https://`
   scheme, a leading `www.`, a port, a trailing `/` or `.`, and a query string
   or fragment.
 - It rejects anything else with a 400 `invalid_filter` error whose `field`,
   `value` and `reason` name the entry (or the count, for a limit): an empty
-  entry, a path, another scheme, a suffix such as `.com` or `com`, a
-  wildcard, an IP address, a `user@` prefix, or an invalid host.
+  entry, a path, another scheme, a bare suffix such as `com` or `co.uk`, a
+  dotted name that isn't a public suffix such as `.example`, a wildcard on a
+  host such as `*.un.org`, an IP address, a `user@` prefix, or an invalid
+  host.
 - If every result is excluded, the response can be empty.
 
 The hosted server is the validator; the npm wrapper passes the list through
@@ -160,6 +166,27 @@ Each store has its own listing, and each one tags its traffic with its own
 
 [`listings/SUBMISSION.md`](listings/SUBMISSION.md) tracks where each listing is
 submitted and its status.
+
+## Monitor tools
+
+With an API key (or a Keenable sign-in on a remote connection), the server
+also lists the [Monitors](https://docs.keenable.ai/products/monitors) tools:
+`whats_new`, `list_monitors`, `get_monitor`, `monitor_pages`,
+`create_monitor`, `update_monitor`, `delete_monitor`, `trigger_monitor` and
+`get_run`. A monitor is a standing query: every newly crawled page that is news
+about its topic is kept as a page of that monitor. Monitors is on for every
+organization and free for now, with up to 100 active monitors per organization.
+
+A remote MCP server cannot push messages to a chat, so news is pulled:
+`whats_new` returns the pages a reader has not been given yet, each once, and
+the server remembers what was read, so a scheduled task that starts a new chat
+every hour still gets each page once. Pass `reader` to give a second person or
+task a separate reading position. Keyless connections list only
+`search_web_pages` and `fetch_page_content`.
+
+The wrapper forwards these tools like the others; its built-in copy of the
+tools (used when the hosted server can't be reached) holds only the two search
+tools.
 
 ## How the wrapper works
 

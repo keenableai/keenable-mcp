@@ -25,7 +25,7 @@ export const TOOLS = [
           "items": {
             "type": "string"
           },
-          "description": "Never return results from these sites. Entries are host names such as \"example.com\", which also covers its subdomains; up to 1,000 hosts. No paths, suffixes such as \".gov\", or wildcards. A scheme, a leading \"www.\" or a trailing \"/\" is cleaned up for you."
+          "description": "Never return results from these sites. Entries are host names such as \"example.com\", which also covers its subdomains; up to 1,000 hosts. No paths or wildcards. A public suffix written with a leading dot, such as \".gov\", excludes every host under it. A scheme, a leading \"www.\" or a trailing \"/\" is cleaned up for you."
         },
         "acquired_after": {
           "type": "string",
@@ -58,6 +58,10 @@ export const TOOLS = [
           "minimum": 1,
           "maximum": 50,
           "description": "How many results to return. Ask for more when surveying a topic broadly, fewer for a quick lookup. When omitted, 10 results are returned."
+        },
+        "objective": {
+          "type": "string",
+          "description": "Optional. Two or three natural sentences, with no field labels and no line breaks, that cover: the exact facts, entities, numbers, dates or names a useful page must contain; task context the query does not state (who, where, when, eligibility, date window); which kinds of sources count or must be excluded; what is already established from earlier steps; and what is still unknown. Every sentence must be self-contained: name the entities, places, dates and figures explicitly, and never refer to 'the task', 'the clue', 'the question', 'above' or earlier results. Do not paste the conversation, and do not include personal, confidential or sensitive information. At most 1,000 characters."
         },
         "session_id": {
           "type": "string",
