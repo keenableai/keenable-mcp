@@ -2,7 +2,7 @@
 """Keenable web search — keyless, no dependencies (Python stdlib only).
 
 Usage:
-  python3 search.py "your query" [--site arxiv.org]
+  python3 search.py "your query" [--include-domain HOST ...]
                      [--exclude-domain HOST ...]
                      [--published-after YYYY-MM-DD] [--published-before YYYY-MM-DD]
                      [--acquired-after YYYY-MM-DD] [--acquired-before YYYY-MM-DD]
@@ -22,6 +22,7 @@ APP_TITLE = "OpenClaw Skill"  # attribution tag for keyless traffic (X-Keenable-
 
 _PARAMS = (
     "site",
+    "include_domains",
     "exclude_domains",
     "published_after",
     "published_before",
@@ -90,7 +91,20 @@ def format_results(data):
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description="Keenable web search (keyless)")
     p.add_argument("query", nargs="+", help="Natural-language search query")
-    p.add_argument("--site", help="Restrict to one site, e.g. arxiv.org")
+    p.add_argument(
+        "--site",
+        help="Deprecated and removed on 2027-02-15: use --include-domain. "
+        "Restrict to one site, e.g. arxiv.org",
+    )
+    p.add_argument(
+        "--include-domain",
+        dest="include_domain",
+        action="append",
+        metavar="HOST",
+        help="Return results only from this host or its subdomains. "
+        "Repeatable; comma lists OK (e.g. arxiv.org,nature.com); up to 50 hosts. "
+        "Rules: see SKILL.md.",
+    )
     p.add_argument(
         "--exclude-domain",
         dest="exclude_domain",
@@ -113,6 +127,7 @@ def main(argv=None):
     data = search(
         " ".join(args.query),
         site=args.site,
+        include_domains=split_domains(args.include_domain),
         exclude_domains=split_domains(args.exclude_domain),
         published_after=args.published_after,
         published_before=args.published_before,

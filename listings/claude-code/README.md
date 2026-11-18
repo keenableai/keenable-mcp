@@ -4,7 +4,7 @@ Gives Claude Code live web search and page reading through Keenable, a web
 search engine built for AI agents. The plugin adds one remote MCP server with
 two tools:
 
-- `search_web_pages` finds current pages on any topic, narrowed by site and
+- `search_web_pages` finds current pages on any topic, narrowed by domain and
   publish date.
 - `fetch_page_content` reads any URL as clean markdown, or returns only the
   part you ask for.
