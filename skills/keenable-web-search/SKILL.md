@@ -76,8 +76,8 @@ Use `--include-domain` to search only some sites, and `--exclude-domain` to
 drop known-noisy sites from an otherwise open search. Both take hosts only,
 each covering its subdomains (`yahoo.com` covers `finance.yahoo.com`); a public
 suffix with a leading dot (`.gov`) covers every host under it. Up to 50
-distinct hosts for `--include-domain`, and up to 1,000 for `--exclude-domain`
-(2,000 entries as sent, 2,048 bytes each). Together, the exclusions apply
+hosts for `--include-domain`, and up to 1,000 distinct hosts for
+`--exclude-domain` (2,000 entries as sent); 2,048 bytes per entry. Together, the exclusions apply
 within the included sites. The API rejects anything else with a 400
 `invalid_filter` error naming the entry. The full rules are in the README's
 [`include_domains`](https://github.com/keenableai/keenable-mcp#include_domains)

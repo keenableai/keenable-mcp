@@ -32,7 +32,7 @@ Use `include_domains` (array) to search only some sites. The skill and
   (`reddit.com` covers `old.reddit.com`).
 - A public suffix written with a leading dot, such as `.gov`, keeps every
   host under it.
-- Up to 50 distinct hosts, 100 entries as sent, 2,048 bytes per entry.
+- Up to 50 hosts, 2,048 bytes per entry.
 - Entries are cleaned up and rejected by the same rules as `exclude_domains`
   (below); a longer list is also rejected with `invalid_filter`.
 - `exclude_domains` still applies within the list: `include_domains`
