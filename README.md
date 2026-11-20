@@ -20,7 +20,7 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 
 | Tool | Description |
 |---|---|
-| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-100), `snippet_max_length` (180-10000), `session_id`, `objective` (two or three sentences on what the search is for, at most 1,000 characters), `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
+| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `objective` (two or three sentences on what the search is for, at most 1,000 characters), `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 20000), `live`, `prompt` (extract only what you ask for; a page too long for a prompt fails with `prompt_input_too_long`, so fetch it again without `prompt`), `session_id`, `output_format`. Errors say whether a retry can help (`Retryable: yes` or `no`). |
 
 ### `exclude_domains`
@@ -188,6 +188,15 @@ result once. `peek: true` looks without marking results as read, and
 read or not. Pass `reader` to give a second person or task a separate reading
 position. Keyless connections list only
 `search_web_pages` and `fetch_page_content`.
+
+`create_monitor` takes `query` (required), `name`, `webhookUrl`,
+`includeDomains` and `excludeDomains`. To have each new result pushed to your
+server instead of pulled, pass `webhookUrl`, a public HTTPS address. The
+response returns the signing secret once, as `webhookSecret`: store it then,
+and treat it like any key pasted into a chat, because it sits in the
+transcript. Deliveries are signed under
+[Standard Webhooks](https://www.standardwebhooks.com); see
+[how to verify them](https://docs.keenable.ai/products/monitors#verify-a-webhook).
 
 The wrapper forwards these tools like the others; its built-in copy of the
 tools (used when the hosted server can't be reached) holds only the two search
