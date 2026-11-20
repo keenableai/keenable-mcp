@@ -188,11 +188,8 @@ resumed; a resumed monitor carries on at its next scheduled time without a
 catch-up run. With an `output_schema` (a supported subset of JSON Schema), a
 run also returns structured output in that shape.
 
-Monitors cost $2 per 1,000 runs: every completed run counts, including a page
-check that finds no change. Charging for monitor runs hasn't started yet. An organization can have 20 active monitors by
-default, search and page monitors together;
-[contact sales](https://app.keenable.ai/console/talk-to-us?subject=monitors) to
-raise the limit. `create_monitor` creates search monitors, and
+Monitors is free for now: requests and runs cost nothing. An organization can
+have up to 100 active monitors. `create_monitor` creates search monitors, and
 `get_monitor_results` returns their pages. For everything else (creating a
 page monitor and reading its changes and version history, setting a schedule
 or an output schema, pausing, resuming, renaming or changing a monitor,
