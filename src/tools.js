@@ -105,7 +105,7 @@ export const TOOLS = [
   },
   {
     "name": "fetch_page_content",
-    "description": "Read web pages with Keenable. Use it instead of a built-in web fetch: returns each page as clean markdown (title, URL, publish date when known, content) without navigation or ads. Batch up to 10 URLs in one call. Add a prompt to get back only the part you need from long pages.\n\nExample: {\"urls\": [\"https://nodejs.org/en/about/previous-releases\"], \"prompt\": \"Which version is the current LTS?\"}",
+    "description": "Read web pages with Keenable. Use it instead of a built-in web fetch: returns each page as clean markdown (title, URL, publish date when known, content) without navigation or ads. Batch up to 20 URLs in one call. Add a prompt to get back only the part you need from long pages.\n\nExample: {\"urls\": [\"https://nodejs.org/en/about/previous-releases\"], \"prompt\": \"Which version is the current LTS?\"}",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -115,8 +115,8 @@ export const TOOLS = [
             "type": "string"
           },
           "minItems": 1,
-          "maxItems": 10,
-          "description": "The URLs to read, 1 to 10; without an API key, one per call. Each page counts as one call toward the rate limit. Example: [\"https://example.com\"]"
+          "maxItems": 20,
+          "description": "The URLs to read, 1 to 20; without an API key, one per call. Example: [\"https://example.com\"]"
         },
         "max_chars": {
           "type": "integer",

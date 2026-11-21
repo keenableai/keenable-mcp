@@ -22,12 +22,12 @@ test("exclude_domains stays optional; only query is required", () => {
 
 const fetchTool = TOOLS.find((t) => t.name === "fetch_page_content");
 
-test("fetch_page_content takes urls as an array of 1 to 10 strings", () => {
+test("fetch_page_content takes urls as an array of 1 to 20 strings", () => {
   const prop = fetchTool.inputSchema.properties.urls;
   assert.equal(prop.type, "array");
   assert.deepEqual(prop.items, { type: "string" });
   assert.equal(prop.minItems, 1);
-  assert.equal(prop.maxItems, 10);
+  assert.equal(prop.maxItems, 20);
 });
 
 test("fetch_page_content reads live with max_age_hours 0 to 720", () => {
