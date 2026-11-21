@@ -19,3 +19,19 @@ test("search_web_pages declares exclude_domains as an array of strings", () => {
 test("exclude_domains stays optional; only query is required", () => {
   assert.deepEqual(search.inputSchema.required, ["query"]);
 });
+
+test("lists the account tools after search and fetch", () => {
+  assert.deepEqual(
+    TOOLS.map((t) => t.name),
+    ["search_web_pages", "fetch_page_content", "get_prices", "get_balance"],
+  );
+});
+
+for (const name of ["get_prices", "get_balance"]) {
+  test(`${name} takes no arguments and is read-only`, () => {
+    const tool = TOOLS.find((t) => t.name === name);
+    assert.deepEqual(tool.inputSchema, { type: "object", properties: {}, additionalProperties: false });
+    assert.equal(tool.annotations.readOnlyHint, true);
+    assert.equal(tool.annotations.destructiveHint, false);
+  });
+}

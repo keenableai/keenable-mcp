@@ -154,5 +154,39 @@ export const TOOLS = [
       "idempotentHint": true,
       "openWorldHint": true
     }
+  },
+  {
+    "name": "get_prices",
+    "title": "Get prices",
+    "description": "The price of each billable SKU (search.pro, fetch.live, ...) for your organization, as unit_price {amount, currency} per unit. Each response's usage.sku names the SKU it was billed as. Without an API key, returns the public list prices.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "title": "Get prices",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "get_balance",
+    "title": "Get balance",
+    "description": "How much money your organization has left to spend (available, including the free monthly allowance), how much of it is purchased balance, the plan and when its allowance renews, and billing_url, where a person can top up. Needs an API key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "title": "Get balance",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
   }
 ];
