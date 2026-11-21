@@ -134,16 +134,6 @@ export const TOOLS = [
           "maximum": 720,
           "description": "How old Keenable's indexed copy may be, in hours; an older copy is read again from the source. 0 always reads the page live. Use it for pages that change often. When omitted, an indexed copy of any age is used when there is one."
         },
-        "url": {
-          "type": "string",
-          "deprecated": true,
-          "description": "Deprecated: send urls. A single URL to read."
-        },
-        "live": {
-          "type": "boolean",
-          "deprecated": true,
-          "description": "Deprecated: send max_age_hours 0. true reads the page live."
-        },
         "session_id": {
           "type": "string",
           "maxLength": 128,
@@ -158,7 +148,10 @@ export const TOOLS = [
           "default": "text",
           "description": "Response format: 'text' for readable text, or 'json' for the raw response serialized as JSON when you need to parse fields programmatically."
         }
-      }
+      },
+      "required": [
+        "urls"
+      ]
     },
     "annotations": {
       "title": "Keenable Page Reader",
