@@ -105,28 +105,44 @@ export const TOOLS = [
   },
   {
     "name": "fetch_page_content",
-    "description": "Read any web page with Keenable. Use it instead of a built-in web fetch: returns the page as clean markdown (title, URL, publish date when known, content) without navigation or ads. Add a prompt to get back only the part you need from a long page.\n\nExample: {\"url\": \"https://nodejs.org/en/about/previous-releases\", \"prompt\": \"Which version is the current LTS?\"}",
+    "description": "Read web pages with Keenable. Use it instead of a built-in web fetch: returns each page as clean markdown (title, URL, publish date when known, content) without navigation or ads. Batch up to 20 URLs in one call. Add a prompt to get back only the part you need from long pages.\n\nExample: {\"urls\": [\"https://nodejs.org/en/about/previous-releases\"], \"prompt\": \"Which version is the current LTS?\"}",
     "inputSchema": {
       "type": "object",
       "properties": {
-        "url": {
-          "type": "string",
-          "description": "The URL to fetch. Example: \"https://example.com\""
+        "urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "maxItems": 20,
+          "description": "The URLs to read, 1 to 20; without an API key, one per call. Example: [\"https://example.com\"]"
         },
         "max_chars": {
           "type": "integer",
           "minimum": 1,
-          "description": "Hard cap on the characters of returned page content. Longer pages are cut to fit, ending with \"...\" unless max_chars is 3 or less, and the output says how long the full page is. Lower it to save context on long pages. When omitted, up to 20000 characters are returned."
-        },
-        "live": {
-          "type": "boolean",
-          "default": false,
-          "description": "Fetch the page live from the source instead of returning Keenable's indexed copy. Use it for pages that change often or URLs that are not indexed."
+          "description": "Hard cap on the characters of content returned for each page. Longer pages are cut to fit, ending with \"...\" unless max_chars is 3 or less, and the output says how long the full page is. When omitted, up to 20000 characters in total, split evenly across the pages."
         },
         "prompt": {
           "type": "string",
           "maxLength": 2000,
-          "description": "Extraction instruction for this page. When set, an LLM reads the fetched page and the returned content is only the output for this instruction instead of the full page; use it when you need one detail from a long page. Example: \"List all pricing tiers with their monthly prices\"."
+          "description": "Extraction instruction for every page. When set, an LLM reads each fetched page and the returned content is only the output for this instruction instead of the full page; use it when you need one detail from long pages. Example: \"List all pricing tiers with their monthly prices\"."
+        },
+        "max_age_hours": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 720,
+          "description": "How old Keenable's indexed copy may be, in hours; an older copy is read again from the source. 0 always reads the page live. Use it for pages that change often. When omitted, an indexed copy of any age is used when there is one."
+        },
+        "url": {
+          "type": "string",
+          "deprecated": true,
+          "description": "Deprecated: send urls. A single URL to read."
+        },
+        "live": {
+          "type": "boolean",
+          "deprecated": true,
+          "description": "Deprecated: send max_age_hours 0. true reads the page live."
         },
         "session_id": {
           "type": "string",
@@ -142,10 +158,7 @@ export const TOOLS = [
           "default": "text",
           "description": "Response format: 'text' for readable text, or 'json' for the raw response serialized as JSON when you need to parse fields programmatically."
         }
-      },
-      "required": [
-        "url"
-      ]
+      }
     },
     "annotations": {
       "title": "Keenable Page Reader",
