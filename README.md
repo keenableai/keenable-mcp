@@ -4,7 +4,7 @@ MCP server for live web search and clean-markdown page fetch over the
 [Keenable](https://keenable.ai) web index.
 
 - **Hosted endpoint:** `https://api.keenable.ai/mcp` (Streamable HTTP)
-- **Tools:** `search_web_pages`, `fetch_page_content`
+- **Tools:** `search_web_pages`, `fetch_page_content`, `get_prices`, `get_balance`
 - **Keyless by default** (1,000 requests/hour). An optional API key lifts the cap.
 - **Rate limits:** 10 calls per second per organization with a key (by default;
   raise it from the console), and 10 per second plus 1,000 per hour per IP
@@ -22,6 +22,8 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 |---|---|
 | `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `objective` (two or three sentences on what the search is for, at most 1,000 characters), `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards). |
 | `fetch_page_content` | Fetch a URL and return clean markdown. Args: `url` (required), optional `max_chars` (default 20000), `live`, `prompt` (extract only what you ask for; a page too long for a prompt fails with `prompt_input_too_long`, so fetch it again without `prompt`), `session_id`, `output_format`. Errors say whether a retry can help (`Retryable: yes` or `no`). |
+| `get_prices` | What each billable SKU costs, as `unit_price` `{amount, currency}` per unit (USD). With an API key, your organization's prices with the list price beside each; without one, the public list prices. No args. |
+| `get_balance` | How much money your organization has left (`available`), how much was purchased (`purchased`), the plan and when its free allowance renews, and `billing_url` for a person to top up. Needs an API key. No args. |
 
 ### `exclude_domains`
 
@@ -205,7 +207,8 @@ result once. `peek: true` looks without marking results as read, and
 `includeSeen: true` with a `monitorId` pages through that monitor's results,
 read or not. Pass `reader` to give a second person or task a separate reading
 position. Keyless connections list only
-`search_web_pages` and `fetch_page_content`.
+`search_web_pages`, `fetch_page_content`, `get_prices` and `get_balance`
+(which answers that it needs an API key).
 
 `create_monitor` takes `query` (required), `name`, `webhookUrl`,
 `includeDomains` and `excludeDomains`. To have each new result pushed to your
