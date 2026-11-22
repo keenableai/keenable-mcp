@@ -69,7 +69,7 @@ function rpcOverStdio(script, requests) {
   });
 }
 
-test("discovery build advertises the metadata and both tools over stdio", async () => {
+test("discovery build advertises the metadata and every tool over stdio", async () => {
   const responses = await rpcOverStdio("../src/discovery.js", [
     {
       id: 1,
@@ -81,6 +81,6 @@ test("discovery build advertises the metadata and both tools over stdio", async 
   assert.deepEqual(responses[1].result.serverInfo, { name: SERVER_NAME, version: VERSION, ...SERVER_METADATA });
   assert.deepEqual(
     responses[2].result.tools.map((t) => t.name),
-    ["search_web_pages", "fetch_page_content"],
+    ["search_web_pages", "fetch_page_content", "get_billing"],
   );
 });

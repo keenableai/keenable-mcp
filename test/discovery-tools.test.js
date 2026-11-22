@@ -43,3 +43,14 @@ test("fetch_page_content requires urls and has no url or live", () => {
   assert.equal("url" in properties, false);
   assert.equal("live" in properties, false);
 });
+
+test("lists get_billing after search and fetch", () => {
+  assert.deepEqual(TOOLS.map((t) => t.name), ["search_web_pages", "fetch_page_content", "get_billing"]);
+});
+
+test("get_billing takes no arguments and is read-only", () => {
+  const tool = TOOLS.find((t) => t.name === "get_billing");
+  assert.deepEqual(tool.inputSchema, { type: "object", properties: {}, additionalProperties: false });
+  assert.equal(tool.annotations.readOnlyHint, true);
+  assert.equal(tool.annotations.destructiveHint, false);
+});
