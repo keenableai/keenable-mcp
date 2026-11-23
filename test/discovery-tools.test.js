@@ -37,11 +37,12 @@ test("fetch_page_content reads live with max_age_hours 0 to 720", () => {
   assert.equal(prop.maximum, 720);
 });
 
-test("fetch_page_content requires urls and has no url or live", () => {
+test("fetch_page_content takes urls, and url and live only as deprecated fallbacks, as the live server does", () => {
   const { properties, required } = fetchTool.inputSchema;
-  assert.deepEqual(required, ["urls"]);
-  assert.equal("url" in properties, false);
-  assert.equal("live" in properties, false);
+  assert.equal(required, undefined);
+  assert.equal(properties.urls.type, "array");
+  assert.equal(properties.url.deprecated, true);
+  assert.equal(properties.live.deprecated, true);
 });
 
 test("lists get_billing after search and fetch", () => {
