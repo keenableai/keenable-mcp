@@ -89,6 +89,14 @@ export const TOOLS = [
           "type": "boolean",
           "default": false,
           "description": "Return search results without cards."
+        },
+        "moderation": {
+          "type": "string",
+          "enum": [
+            "moderate",
+            "strict"
+          ],
+          "description": "Filter unsafe results: 'moderate' or 'strict'. Leave it out for no moderation. Not supported when the query is a URL."
         }
       },
       "required": [
