@@ -190,7 +190,7 @@ run also returns structured output in that shape.
 
 Monitors is free for now: requests and runs cost nothing. An organization can
 have up to 100 active monitors. `create_monitor` creates search monitors, and
-`get_monitor_results` returns their pages. For everything else (creating a
+`get_monitor_results` returns their results. For everything else (creating a
 page monitor and reading its changes and version history, setting a schedule
 or an output schema, pausing, resuming, renaming or changing a monitor,
 starting a run or reading one), use the
