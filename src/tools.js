@@ -124,7 +124,7 @@ export const TOOLS = [
           },
           "minItems": 1,
           "maxItems": 20,
-          "description": "The URLs to read, 1 to 20; without an API key, one per call. Example: [\"https://example.com\"]"
+          "description": "The URLs to read, 1 to 20; without an API key, 1 to 10, each counting toward the keyless rate limit. Example: [\"https://example.com\"]"
         },
         "max_chars": {
           "type": "integer",
