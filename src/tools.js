@@ -171,7 +171,7 @@ export const TOOLS = [
   {
     "name": "get_billing",
     "title": "Get billing",
-    "description": "What each Keenable call costs and, with an API key, how much money your organization has left and has spent this month. Returns prices as unit_price {amount, currency} per SKU; with a key, your organization's own prices and account {balance, usage, billing_url}, where usage is this month's spend by line item and billing_url is where a person can top up. Without a key, the public list prices and account null. Free, read-only, no arguments.",
+    "description": "What each Keenable call costs and, with an API key, how much money your organization has left. Returns prices as unit_price {amount, currency} per SKU; with a key, your organization's own prices and account {balance: {available}, billing_url}, where billing_url is where a person can top up. Without a key, the public list prices and account null. Free, read-only, no arguments.",
     "inputSchema": {
       "type": "object",
       "properties": {},
