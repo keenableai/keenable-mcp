@@ -1,9 +1,13 @@
+// Same cases as keenableai/ci-workflows/test/pr-body.test.mjs, run against the
+// verbatim copy in scripts/pr-description/ and this repo's template.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { checkPrBody, checkReleaseNotes, parseSections } from "../scripts/pr-body.mjs";
+import { checkPrBody, checkReleaseNotes, compilePathPatterns, parseSections } from "../scripts/pr-description/pr-body.mjs";
 
 const template = readFileSync(new URL("../.github/pull_request_template.md", import.meta.url), "utf8");
+const SECTIONS = ["Why", "Hypothesis", "Evidence", "Risk and rollback", "Follow-up"];
+const AGENT_FACING = "src/tools.js\nsrc/mcp-server/\nopenapi.json\n# a comment\nskills/**/SKILL.md\n";
 
 const good = `## Why
 Codex users in CI call fetch_page_content with a single url and get a schema error since #45 (KEE-1600, 14 transcripts).
@@ -18,35 +22,43 @@ Measured: tool-ab run https://example.test/runs/123 on base and head, 300 tasks,
 
 ## Risk and rollback
 Clients that send both url and urls get urls; a revert restores the old schema.
+
+## Follow-up
+MCP tool error panel in Grafana on 2026-12-08, one week after deploy.
 `;
 
-test("the template as shipped fails: every section is still empty", () => {
+test("the template as shipped fails on every section", () => {
   const { errors } = checkPrBody({ body: template });
-  for (const heading of ["Why", "Hypothesis", "Evidence", "Risk and rollback"]) {
+  for (const heading of SECTIONS) {
     assert.ok(errors.some((e) => e.includes(`## ${heading}`)), `expected an error for ${heading}: ${errors.join(" | ")}`);
   }
 });
 
 test("a filled description passes, with or without the template comments left in", () => {
-  assert.deepEqual(checkPrBody({ body: good, files: ["src/tools.js"] }).errors, []);
+  assert.deepEqual(checkPrBody({ body: good, files: ["src/tools.js"], agentFacingPaths: AGENT_FACING }).errors, []);
   assert.deepEqual(checkPrBody({ body: `${template}\n${good}` }).errors, []);
 });
 
 test("an empty or missing description fails on every section", () => {
-  assert.equal(checkPrBody({ body: "" }).errors.length, 4);
-  assert.equal(checkPrBody({ body: null }).errors.length, 4);
+  assert.equal(checkPrBody({ body: "" }).errors.length, SECTIONS.length);
+  assert.equal(checkPrBody({ body: null }).errors.length, SECTIONS.length);
 });
 
 test("filler answers count as empty", () => {
-  const body = good.replace(/## Risk and rollback\n.*\n/, "## Risk and rollback\nN/A\n");
-  const { errors } = checkPrBody({ body });
-  assert.deepEqual(errors.length, 1);
+  const { errors } = checkPrBody({ body: good.replace(/## Risk and rollback\n.*\n/, "## Risk and rollback\nN/A\n") });
+  assert.equal(errors.length, 1);
   assert.match(errors[0], /Risk and rollback" is empty/);
 });
 
+test("follow-up accepts a reasoned none but not a bare one", () => {
+  const reasoned = good.replace(/## Follow-up\n.*\n/, "## Follow-up\nNone, because the flag is off until the launch PR.\n");
+  assert.deepEqual(checkPrBody({ body: reasoned }).errors, []);
+  const bare = good.replace(/## Follow-up\n.*\n/, "## Follow-up\nNone\n");
+  assert.match(checkPrBody({ body: bare }).errors.join(), /Follow-up" is empty/);
+});
+
 test("a hypothesis without a kill criterion fails", () => {
-  const body = good.replace(/We'll know we're wrong when.*\n/, "");
-  const { errors } = checkPrBody({ body });
+  const { errors } = checkPrBody({ body: good.replace(/We'll know we're wrong when.*\n/, "") });
   assert.equal(errors.length, 1);
   assert.match(errors[0], /wrong when/);
 });
@@ -56,22 +68,34 @@ test("placeholders copied out of the template are caught", () => {
   assert.match(checkPrBody({ body }).errors.join(), /placeholder <change>/);
 });
 
-test("no-behavior-change skips the hypothesis but still wants evidence", () => {
-  const body = good.replace(/## Hypothesis\n[\s\S]*?\n## Evidence/, "## Evidence");
+test("no-behavior-change skips hypothesis and follow-up but still wants evidence", () => {
+  const body = good.replace(/## Hypothesis\n[\s\S]*?\n## Evidence/, "## Evidence").replace(/## Follow-up\n.*\n/, "");
   assert.deepEqual(checkPrBody({ body, labels: ["no-behavior-change"] }).errors, []);
   assert.match(checkPrBody({ body }).errors.join(), /Missing the "## Hypothesis"/);
+  assert.match(checkPrBody({ body }).errors.join(), /Missing the "## Follow-up"/);
   const noEvidence = body.replace(/## Evidence\n.*\n/, "");
   assert.match(checkPrBody({ body: noEvidence, labels: ["no-behavior-change"] }).errors.join(), /Missing the "## Evidence"/);
 });
 
-test("changes to what agents read need a linked run", () => {
+test("agent-facing changes need a linked run", () => {
   const body = good.replace(/https:\/\/\S+ /, "");
-  assert.deepEqual(checkPrBody({ body, files: ["README.md", "test/x.test.js"] }).errors, []);
-  for (const file of ["src/tools.js", "src/metadata.js", "skills/keenable-web-search/SKILL.md"]) {
-    const { errors } = checkPrBody({ body, files: [file] });
+  const check = (files) => checkPrBody({ body, files, agentFacingPaths: AGENT_FACING }).errors;
+  assert.deepEqual(check(["README.md", "src/tools.json", "skills/x/README.md"]), []);
+  for (const file of ["src/tools.js", "src/mcp-server/a/b.ts", "openapi.json", "skills/web/SKILL.md"]) {
+    const errors = check([file]);
     assert.equal(errors.length, 1, file);
     assert.match(errors[0], /must link the run/);
   }
+  assert.deepEqual(checkPrBody({ body, files: ["src/tools.js"] }).errors, [], "no patterns, no requirement");
+});
+
+test("path patterns: prefix, single and double star, regex characters are literal", () => {
+  const [prefix, star, double, literal] = compilePathPatterns("src/\n*.json\na/**/z.md\nfile+(1).txt");
+  assert.ok(prefix.test("src/a/b.ts") && !prefix.test("srcx/a"));
+  assert.ok(star.test("openapi.json") && !star.test("docs/openapi.json"));
+  assert.ok(double.test("a/b/c/z.md") && !double.test("b/z.md"));
+  assert.ok(literal.test("file+(1).txt") && !literal.test("fileee(1).txt"));
+  assert.deepEqual(compilePathPatterns(""), []);
 });
 
 test("headings match by prefix and case; code fences do not start sections", () => {
@@ -85,7 +109,7 @@ test("a missing Linear key is a notice, not an error", () => {
   const result = checkPrBody({ body });
   assert.deepEqual(result.errors, []);
   assert.equal(result.notices.length, 1);
-  assert.equal(checkPrBody({ body, branch: "kee-1600-fix".toUpperCase() }).notices.length, 0);
+  assert.equal(checkPrBody({ body, branch: "KEE-1600-fix" }).notices.length, 0);
 });
 
 const notes = `## What changes for users

@@ -1,19 +1,21 @@
 #!/usr/bin/env node
-// Checks a pull request description against .github/pull_request_template.md,
-// or with --release, the notes of a GitHub Release before it is published.
-// pr-body-lint.yml runs it from the base branch, never from the PR, so a PR
-// cannot loosen the rules it is judged by. Dependency-free.
+// Checks a pull request description against pull_request_template.md, or with
+// --release, the notes of a release. Dependency-free; needs Node 18+.
+//
+// Canonical copy: keenableai/ci-workflows/pr-description/. Public repos carry
+// a verbatim copy (see pr-body.mjs).
 //
 // Inputs (environment):
-//   PR_BODY_FILE   file holding the description (or the release notes)
-//   PR_FILES_FILE  file with one changed path per line
-//   PR_LABELS      JSON array of label names
+//   PR_BODY_FILE         file holding the description (or the release notes)
+//   PR_FILES_FILE        file with one changed path per line
+//   PR_LABELS            JSON array of label names
 //   PR_TITLE, PR_BRANCH
-//   PRERELEASE     "true" for a prerelease (--release only)
+//   AGENT_FACING_PATHS   one path pattern per line (see compilePathPatterns)
+//   PRERELEASE           "true" for a prerelease (--release only)
 //
 // Local use:
-//   PR_BODY_FILE=body.md node scripts/check-pr-body.mjs
-//   PR_BODY_FILE=notes.md node scripts/check-pr-body.mjs --release
+//   PR_BODY_FILE=body.md node check-pr-body.mjs
+//   PR_BODY_FILE=notes.md node check-pr-body.mjs --release
 import { appendFileSync, readFileSync } from "node:fs";
 import { checkPrBody, checkReleaseNotes } from "./pr-body.mjs";
 
@@ -43,6 +45,7 @@ const { errors, notices } = release
       branch: process.env.PR_BRANCH ?? "",
       labels: parseLabels(process.env.PR_LABELS),
       files: readLines(process.env.PR_FILES_FILE),
+      agentFacingPaths: process.env.AGENT_FACING_PATHS ?? "",
     });
 
 // Workflow commands are line-based: a newline in a message would end it early.
@@ -58,7 +61,7 @@ const summary = [
   "",
   errors.length
     ? release
-      ? "Edit the release notes, then re-run this workflow. The sections are in the Releasing part of README.md."
+      ? "Edit the release notes, then re-run this workflow."
       : "Edit the PR description; this check re-runs on every edit. The sections are in `.github/pull_request_template.md`."
     : "",
 ].join("\n");

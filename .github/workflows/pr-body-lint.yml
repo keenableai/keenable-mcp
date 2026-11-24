@@ -1,10 +1,15 @@
 name: pr-body-lint
 
-# A PR description has to say why the change exists, who it is for, how we
-# would know it worked or failed, what evidence backs it, and how to undo it
-# (.github/pull_request_template.md). A PR that changes what agents read
-# directly (tool descriptions and schemas, server instructions, the skill) must
-# also link a run. The rules are in scripts/pr-body.mjs.
+# A PR description has to say why the change exists, for whom, the hypothesis
+# and its kill criterion, the evidence, the rollback and where the result will
+# be checked after it ships (.github/pull_request_template.md). A PR that
+# changes what agents read directly (AGENT_FACING_PATHS below) must also link
+# a run.
+#
+# scripts/pr-description/ is a verbatim copy of the shared checker in
+# keenableai/ci-workflows/pr-description/ (with MEASURING.md, the guide to
+# measuring). This repo is public and cannot use actions from that internal
+# repo, so change the checker there first, then re-copy.
 #
 # pull_request_target runs this file and the checker from the base branch, so
 # a PR cannot loosen the check that judges it. Nothing from the PR is checked
@@ -41,13 +46,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20
+          node-version: '26'
       - name: Collect the description and changed files
         env:
           GH_TOKEN: ${{ github.token }}
@@ -66,4 +71,8 @@ jobs:
           PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: node scripts/check-pr-body.mjs
+          AGENT_FACING_PATHS: |
+            src/tools.js
+            src/metadata.js
+            skills/
+        run: node scripts/pr-description/check-pr-body.mjs

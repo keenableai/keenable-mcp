@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # Actions are pinned to full commit SHAs; this keeps the pins on the latest
+  # releases with a weekly grouped PR.
+  - package-ecosystem: github-actions
+    directories: [/, /.github/actions/install-gitleaks]
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"

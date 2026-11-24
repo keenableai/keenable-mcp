@@ -1,20 +1,14 @@
-// Rules for a pull request description (.github/pull_request_template.md) and
-// for the notes of a GitHub Release that publish-npm.yml ships. Pure functions,
-// so test/pr-body.test.js can pin them down. check-pr-body.mjs is the CLI that
-// pr-body-lint.yml runs from the base branch and publish-npm.yml runs on the
-// release.
+// Rules for a pull request description (pull_request_template.md next to this
+// file) and for the notes of a release. Pure functions, pinned down by
+// test/pr-body.test.mjs.
+//
+// Canonical copy: keenableai/ci-workflows/pr-description/. Public repos cannot
+// use actions from this internal repo, so they carry a verbatim copy of this
+// file and check-pr-body.mjs. Change it here first, then re-copy.
 
 export const NO_BEHAVIOR_CHANGE_LABEL = "no-behavior-change";
 
-// Paths whose wording or behavior agents consume directly. A change here has to
-// link the run that shows its effect, not just describe it.
-export const EVAL_SENSITIVE_PATHS = [
-  /^src\/tools\.js$/,
-  /^src\/metadata\.js$/,
-  /^skills\//,
-];
-
-const SECTIONS = [
+const PR_SECTIONS = [
   {
     heading: "Why",
     minChars: 40,
@@ -23,40 +17,45 @@ const SECTIONS = [
   {
     heading: "Hypothesis",
     minChars: 0,
+    behavior: true,
     hint: "Write \"We believe <change> for <who> will result in <outcome>\", then a \"We'll know we're right when …\" line and a \"We'll know we're wrong when …\" line.",
   },
   {
     heading: "Evidence",
     minChars: 20,
-    hint: "Say what you ran and what it showed, with links to runs or output.",
+    hint: "Say what you ran and what it showed, with links: an eval run, agents run on base and head, a second model's review, real calls and their output.",
   },
   {
     heading: "Risk and rollback",
     minChars: 20,
     hint: "Say what could break outside the diff and how to undo it.",
   },
+  {
+    heading: "Follow-up",
+    minChars: 20,
+    behavior: true,
+    hint: "Say where you will look once it ships (a Grafana dashboard, a PostHog insight, a scheduled eval) and when. \"None, because …\" is an answer.",
+  },
 ];
 
-// A merge to main can be reverted; a release cannot. npx users get the new
-// `latest` on their next start and npm does not let a version be taken back,
-// so stable release notes carry their own evidence and rollback plan.
-// Prereleases go to the `next` dist-tag, which only opted-in users get.
+// A merge to main can be reverted. A release reaches every user and cannot be
+// taken back, so a stable release carries its own evidence and rollback plan.
 const RELEASE_SECTIONS = [
   {
     heading: "What changes for users",
     minChars: 40,
-    hint: "Say what users and their agents will see differently: tools, parameters, descriptions, errors, install steps.",
+    hint: "Say what users and their agents will see differently: methods, options, tools, descriptions, errors, install steps.",
   },
   {
     heading: "Evidence",
     minChars: 20,
     needsLink: true,
-    hint: "Link what shows this version is safe to give everyone: the eval run on the previous and new version, the prerelease that ran on `next`, a smoke test of the packed tarball.",
+    hint: "Link what shows this version is safe to give everyone: the eval run on the old and new version, the prerelease that ran first, a smoke test of the built package.",
   },
   {
     heading: "Rollback",
     minChars: 20,
-    hint: "Say how users get back to the previous version (for example `npm dist-tag add @keenable/mcp@<previous> latest`) and what a rollback cannot undo.",
+    hint: "Say how users get back to the previous version (a dist-tag move, a yanked version, a pin) and what a rollback cannot undo.",
   },
 ];
 
@@ -92,9 +91,7 @@ export function parseSections(markdown) {
 function findSection(sections, heading) {
   const wanted = heading.toLowerCase();
   for (const [name, text] of sections) {
-    if (name === wanted || name.startsWith(`${wanted} `) || name.startsWith(`${wanted}/`) || name.startsWith(`${wanted}:`)) {
-      return text;
-    }
+    if (name === wanted || [" ", "/", ":"].some((sep) => name.startsWith(`${wanted}${sep}`))) return text;
   }
   return undefined;
 }
@@ -108,8 +105,22 @@ function hasClause(text, phrase) {
   return Boolean(match && match[1].trim().length >= 10);
 }
 
-export function isEvalSensitive(file) {
-  return EVAL_SENSITIVE_PATHS.some((pattern) => pattern.test(file));
+// One pattern per line: "dir/" matches everything under dir, "*" matches
+// within one path segment, "**" across segments. Blank lines and "#" comments
+// are ignored.
+export function compilePathPatterns(spec) {
+  return String(spec ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"))
+    .map((line) => {
+      const source = line
+        .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+        .replace(/\*\*/g, "\u0000")
+        .replace(/\*/g, "[^/]*")
+        .replace(/\u0000/g, ".*");
+      return new RegExp(`^${source}${line.endsWith("/") ? "" : "$"}`);
+    });
 }
 
 function checkSectionList(sections, specs, errors) {
@@ -134,18 +145,18 @@ function checkSectionList(sections, specs, errors) {
 }
 
 // Returns { errors, notices }. Errors fail the check; notices are advice.
-export function checkPrBody({ body = "", title = "", branch = "", labels = [], files = [] }) {
+// agentFacingPaths: the repo's patterns (see compilePathPatterns) for files
+// whose change reaches agents or API clients directly; those PRs must link a
+// run in Evidence.
+export function checkPrBody({ body = "", title = "", branch = "", labels = [], files = [], agentFacingPaths = "" }) {
   const errors = [];
   const notices = [];
   const sections = parseSections(body ?? "");
   const noBehaviorChange = labels.includes(NO_BEHAVIOR_CHANGE_LABEL);
-  const sensitive = files.filter(isEvalSensitive);
+  const patterns = compilePathPatterns(agentFacingPaths);
+  const agentFacing = files.filter((file) => patterns.some((p) => p.test(file)));
 
-  checkSectionList(
-    sections,
-    SECTIONS.filter((section) => !(noBehaviorChange && section.heading === "Hypothesis")),
-    errors,
-  );
+  checkSectionList(sections, PR_SECTIONS.filter((s) => !(noBehaviorChange && s.behavior)), errors);
 
   const hypothesis = findSection(sections, "Hypothesis");
   if (!noBehaviorChange && hypothesis !== undefined && !isEmptyAnswer(hypothesis)) {
@@ -158,9 +169,9 @@ export function checkPrBody({ body = "", title = "", branch = "", labels = [], f
   }
 
   const evidence = findSection(sections, "Evidence");
-  if (sensitive.length > 0 && evidence !== undefined && !URL.test(evidence)) {
-    const shown = sensitive.slice(0, 5).join(", ") + (sensitive.length > 5 ? ", …" : "");
-    errors.push(`This PR changes what agents read directly (${shown}). "## Evidence" must link the run that shows the effect, for example the eval run on base and head.`);
+  if (agentFacing.length > 0 && evidence !== undefined && !URL.test(evidence)) {
+    const shown = agentFacing.slice(0, 5).join(", ") + (agentFacing.length > 5 ? ", …" : "");
+    errors.push(`This PR changes what agents or API clients get directly (${shown}). "## Evidence" must link the run that shows the effect, for example the eval run on base and head.`);
   }
 
   if (!LINEAR_KEY.test(`${title}\n${branch}\n${body ?? ""}`)) {
@@ -170,11 +181,10 @@ export function checkPrBody({ body = "", title = "", branch = "", labels = [], f
   return { errors, notices };
 }
 
-// Notes of a GitHub Release. Stable releases need every section; a prerelease
-// needs only "What changes for users".
+// Notes of a release. A stable release needs every section; a prerelease
+// reaches only opted-in users and needs only "What changes for users".
 export function checkReleaseNotes({ body = "", prerelease = false }) {
   const errors = [];
-  const specs = prerelease ? RELEASE_SECTIONS.slice(0, 1) : RELEASE_SECTIONS;
-  checkSectionList(parseSections(body ?? ""), specs, errors);
+  checkSectionList(parseSections(body ?? ""), prerelease ? RELEASE_SECTIONS.slice(0, 1) : RELEASE_SECTIONS, errors);
   return { errors, notices: [] };
 }
