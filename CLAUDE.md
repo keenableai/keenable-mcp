@@ -20,3 +20,14 @@ Write new code in TypeScript when the repository can run it. This package is pla
 - The migration is its own change: convert `src/` and `test/`, compile to `dist/`, point `bin` and `files` at `dist/`, and keep the CI matrix (Node 18/20/22, oldest accepted MCP SDK).
 
 In the other Keenable repositories that already compile TypeScript (keenable-backend-ts, keenable-landing), new code is always `.ts`/`.tsx`.
+
+## Pull request descriptions and releases
+
+`pr-body-lint` (rules in `scripts/pr-body.mjs`) fails a PR whose description lacks the sections of `.github/pull_request_template.md`:
+
+- **Why:** who it is for (a named customer or agent segment) and the evidence they have the problem.
+- **Hypothesis:** "We believe … for … will result in …", plus a "we'll know we're right when …" line and a "we'll know we're wrong when …" line, each with a metric and threshold. Skip it only with the `no-behavior-change` label.
+- **Evidence:** what you actually ran and what it showed, with each claim marked measured, inferred or guess. A change to `src/tools.js`, `src/metadata.js` or `skills/` must link a run, because agents read those directly.
+- **Risk and rollback:** what could break outside the diff and how to undo it.
+
+A release reaches every user and can't be taken back, so `publish-npm.yml` also checks the release notes: What changes for users, Evidence (with a link) and Rollback. See "Releasing" in `README.md`. Ship risky changes as a prerelease on `next` first.

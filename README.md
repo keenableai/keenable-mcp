@@ -281,10 +281,25 @@ To release a new npm version:
 1. Bump `version` in `package.json` and `packages[].version` in `server.json`,
    and merge to `main`.
 2. Create a GitHub Release tagged `v<version>` (for example `v0.1.2`) on that
-   commit.
-3. `publish-npm.yml` checks that the tag matches `package.json`, runs the
-   tests, and publishes to npm with Trusted Publishing (OIDC, no token). It
-   ignores releases whose tag does not start with `v`.
+   commit. Its notes need three sections, because a merge to `main` can be
+   reverted but a release cannot: `npx` users get the new `latest` on their
+   next start, and npm does not let a version be taken back.
+   - `## What changes for users`: what users and their agents will see
+     differently (tools, parameters, descriptions, errors, install steps).
+   - `## Evidence`: a link to what shows the version is safe to give
+     everyone, such as the eval run on the old and new version, the
+     prerelease that ran on `next`, or a smoke test of the packed tarball.
+   - `## Rollback`: how users get back, for example
+     `npm dist-tag add @keenable/mcp@<previous> latest`, and what that cannot
+     undo.
+
+   A prerelease (`0.2.0-beta.1`) goes to the `next` dist-tag and only needs
+   `## What changes for users`. Ship risky changes as a prerelease first.
+3. `publish-npm.yml` checks that the tag matches `package.json` and that the
+   release notes have those sections. It then runs the tests and publishes to
+   npm with Trusted Publishing (OIDC, no token). It ignores releases whose tag
+   does not start with `v`. If the notes check fails, edit the release notes
+   and re-run the workflow.
 
 The MCP Registry entry is still published by hand: bumping
 `packages[].version` changes `server.json`, so also bump its top-level

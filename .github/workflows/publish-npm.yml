@@ -45,6 +45,29 @@ jobs:
             exit 1
           fi
       - run: npm run check:version
+      # A stable version reaches every npx user on their next start and cannot
+      # be unpublished, so its notes must carry evidence and a rollback plan
+      # (rules: scripts/pr-body.mjs, RELEASE_SECTIONS). A prerelease goes to
+      # `next` and only needs "What changes for users". The notes are read
+      # from the API, not the event: a re-run replays the original event, so
+      # notes fixed after a failure would otherwise never be seen.
+      - name: Release notes carry evidence and a rollback plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if ! gh api "repos/$REPO/releases/tags/$TAG" --jq '.body // ""' > "$RUNNER_TEMP/notes.md"; then
+            echo "::error::No published GitHub Release for $TAG; publish one with notes before releasing."
+            exit 1
+          fi
+          version=$(node -p "require('./package.json').version")
+          case "$version" in
+            *-*) prerelease=true ;;
+            *) prerelease=false ;;
+          esac
+          PR_BODY_FILE="$RUNNER_TEMP/notes.md" PRERELEASE="$prerelease" node scripts/check-pr-body.mjs --release
       - run: npm install --no-audit --no-fund
       - run: npm test
       - name: Pack

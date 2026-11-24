@@ -1,0 +1,69 @@
+name: pr-body-lint
+
+# A PR description has to say why the change exists, who it is for, how we
+# would know it worked or failed, what evidence backs it, and how to undo it
+# (.github/pull_request_template.md). A PR that changes what agents read
+# directly (tool descriptions and schemas, server instructions, the skill) must
+# also link a run. The rules are in scripts/pr-body.mjs.
+#
+# pull_request_target runs this file and the checker from the base branch, so
+# a PR cannot loosen the check that judges it. Nothing from the PR is checked
+# out or executed: the description arrives as data in the event, and the
+# changed files come from the API. That is why the token can stay read-only.
+#
+# Enforcement is the ruleset, not this file: make "pr-body-lint / Description"
+# a required status check on main. auto-approve.yml still approves on Qodo's
+# review; the required check is what stops a merge with an empty description.
+# The check re-runs whenever the description, labels or commits change.
+#
+# Until this file is on main, PRs get no run: pull_request_target reads the
+# workflow from the base branch.
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled, ready_for_review]
+
+concurrency:
+  group: pr-body-lint-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check:
+    name: Description
+    # Dependabot writes its own descriptions. A skipped job satisfies a
+    # required check, so its PRs are not blocked.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Collect the description and changed files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUM: ${{ github.event.pull_request.number }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$BODY" > "$RUNNER_TEMP/body.md"
+          gh api "repos/$REPO/pulls/$NUM/files" --paginate --jq '.[].filename' > "$RUNNER_TEMP/files.txt"
+      # Dependency-free script: no npm install needed.
+      - name: Check the description
+        env:
+          PR_BODY_FILE: ${{ runner.temp }}/body.md
+          PR_FILES_FILE: ${{ runner.temp }}/files.txt
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: node scripts/check-pr-body.mjs
