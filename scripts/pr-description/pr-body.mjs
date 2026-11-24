@@ -4,7 +4,8 @@
 //
 // Canonical copy: keenableai/ci-workflows/pr-description/. Public repos cannot
 // use actions from this internal repo, so they carry a verbatim copy of this
-// file and check-pr-body.mjs. Change it here first, then re-copy.
+// file, pr-body.d.mts (its types) and check-pr-body.mjs. Change them here
+// first, then re-copy.
 
 export const NO_BEHAVIOR_CHANGE_LABEL = "no-behavior-change";
 
