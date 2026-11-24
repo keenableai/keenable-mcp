@@ -37,9 +37,11 @@ test("fetch_page_content reads live with max_age_hours 0 to 720", () => {
   assert.equal(prop.maximum, 720);
 });
 
-test("fetch_page_content requires urls and has no url or live", () => {
-  const { properties, required } = fetchTool.inputSchema;
-  assert.deepEqual(required, ["urls"]);
-  assert.equal("url" in properties, false);
-  assert.equal("live" in properties, false);
+test("fetch_page_content keeps url and live as deprecated and requires nothing", () => {
+  const { url, live } = fetchTool.inputSchema.properties;
+  assert.equal(url.type, "string");
+  assert.equal(url.deprecated, true);
+  assert.equal(live.type, "boolean");
+  assert.equal(live.deprecated, true);
+  assert.equal("required" in fetchTool.inputSchema, false);
 });
