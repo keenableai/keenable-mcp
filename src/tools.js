@@ -89,6 +89,14 @@ export const TOOLS = [
           "type": "boolean",
           "default": false,
           "description": "Return search results without cards."
+        },
+        "moderation": {
+          "type": "string",
+          "enum": [
+            "moderate",
+            "strict"
+          ],
+          "description": "Filter unsafe results: 'moderate' or 'strict'. Leave it out for no moderation. Not supported when the query is a URL."
         }
       },
       "required": [
@@ -116,7 +124,7 @@ export const TOOLS = [
           },
           "minItems": 1,
           "maxItems": 20,
-          "description": "The URLs to read, 1 to 20; without an API key, one per call. Example: [\"https://example.com\"]"
+          "description": "The URLs to read, 1 to 20; without an API key, 1 to 10, each counting toward the keyless rate limit. Example: [\"https://example.com\"]"
         },
         "max_chars": {
           "type": "integer",
