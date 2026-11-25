@@ -110,20 +110,24 @@ test("the headings people already use count: Evidence, Tests, Rollback note", ()
   assert.deepEqual(checkPrBody({ body: good.replace("## Checks", "## Evidence") }).errors, []);
 });
 
-test("UI changes need a Screenshots section with an image or recording", () => {
-  const ui = { files: ["admin-ui/src/App.tsx"], visualPaths: "admin-ui/\nsrc/**/*.css" };
-  assert.match(checkPrBody({ body: good, ...ui }).errors.join(), /needs a "## Screenshots" section/);
-  const words = `${good}\n## Screenshots\nLooks the same as before, trust me.\n`;
-  assert.match(checkPrBody({ body: words, ...ui }).errors.join(), /Screenshots/);
+test("UI changes get a screenshot suggestion, never a missing-section warning", () => {
+  const ui = { files: ["src/components/Hero.tsx"], visualPaths: "src/components/\nsrc/**/*.css" };
+  const bare = checkPrBody({ body: good, ...ui });
+  assert.deepEqual(bare.errors, []);
+  assert.ok(bare.notices.some((n) => /Screenshots help the reviewer/.test(n)));
+  const words = checkPrBody({ body: `${good}\n## Screenshots\nLooks the same as before.\n`, ...ui });
+  assert.ok(words.notices.some((n) => /Screenshots help/.test(n)));
   for (const shot of [
     "![after](https://github.com/user-attachments/assets/abc123)",
     '<img width="600" src="https://github.com/user-attachments/assets/abc123">',
     "Before and after: docs/pr-screenshots/696/after-desktop.png",
     "Recording: https://example.test/demo.mp4",
   ]) {
-    assert.deepEqual(checkPrBody({ body: `${good}\n## Screenshots\n${shot}\n`, ...ui }).errors, [], shot);
+    const r = checkPrBody({ body: `${good}\n## Screenshots\n${shot}\n`, ...ui });
+    assert.ok(!r.notices.some((n) => /Screenshots help/.test(n)), shot);
   }
-  assert.deepEqual(checkPrBody({ body: good, files: ["src/server.ts"], visualPaths: ui.visualPaths }).errors, []);
+  const server = checkPrBody({ body: good, files: ["src/server.ts"], visualPaths: ui.visualPaths });
+  assert.ok(!server.notices.some((n) => /Screenshots help/.test(n)));
 });
 
 test("headings match by prefix and case; code fences do not start sections", () => {

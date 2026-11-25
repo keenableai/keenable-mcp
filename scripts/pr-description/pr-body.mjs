@@ -53,7 +53,7 @@ const PR_SECTIONS = [
 const SCREENSHOTS = {
   heading: "Screenshots",
   aliases: ["Screenshot", "Before and after", "UI"],
-  hint: "Add before and after screenshots (desktop and mobile when the page has both) or a short recording: drag the images into the description, or link them (e.g. docs/pr-screenshots/<PR>/).",
+  hint: "add a \"## Screenshots\" section with before and after (desktop and mobile when the page has both) or a short recording.",
 };
 
 const MEDIA = /!\[[^\]]*\]\([^)]+\)|<img\s|<video\s|https?:\/\/\S*(user-attachments|user-images\.githubusercontent)\S*|\S+\.(png|jpe?g|gif|webp|mp4|webm|mov)\b/i;
@@ -174,7 +174,8 @@ function checkSectionList(sections, specs, errors) {
 // agentFacingPaths: the repo's patterns (see compilePathPatterns) for files
 // whose change reaches agents or API clients directly; those PRs must link a
 // run in Checks. visualPaths: patterns for files whose change shows on a
-// screen; those PRs need a Screenshots section with an image or recording.
+// screen; those PRs get a notice suggesting screenshots (encouraged, never
+// counted as missing).
 export function checkPrBody({ body = "", title = "", branch = "", labels = [], files = [], agentFacingPaths = "", visualPaths = "" }) {
   const errors = [];
   const notices = [];
@@ -205,7 +206,7 @@ export function checkPrBody({ body = "", title = "", branch = "", labels = [], f
   if (visual.length > 0) {
     const shots = findSection(sections, SCREENSHOTS);
     if (shots === undefined || !MEDIA.test(shots)) {
-      errors.push(`This PR changes what people see (${listFiles(visual)}), so it needs a "## Screenshots" section with an image or recording. ${SCREENSHOTS.hint}`);
+      notices.push(`This PR changes what people see (${listFiles(visual)}). Screenshots help the reviewer: ${SCREENSHOTS.hint}`);
     }
   }
 

@@ -36,7 +36,7 @@ What you ran and what it showed:
 - tool description, schema, server instructions or skill changed: give agents
   of several families (Claude, a GPT/Codex model, an open model) the same tasks
   on base and head and compare what they do: tool chosen, argument errors,
-  task success. Link the run; required for src/tools.js, src/metadata.js, skills/.
+  task success. Link the run (expected for src/tools.js, src/metadata.js, skills/).
 - the bridge run against the hosted server, and its output
 Say what you could not run and why.
 -->
