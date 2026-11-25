@@ -6,10 +6,13 @@ import { readFileSync } from "node:fs";
 import { checkPrBody, checkReleaseNotes, compilePathPatterns, parseSections } from "../scripts/pr-description/pr-body.mjs";
 
 const template = readFileSync(new URL("../.github/pull_request_template.md", import.meta.url), "utf8");
-const SECTIONS = ["Why", "Hypothesis", "Evidence", "Risk and rollback", "Follow-up"];
+const SECTIONS = ["What", "Why", "Hypothesis", "Checks", "Risk and rollback", "Follow-up"];
 const AGENT_FACING = "src/tools.js\nsrc/mcp-server/\nopenapi.json\n# a comment\nskills/**/SKILL.md\n";
 
-const good = `## Why
+const good = `## What
+fetch_page_content accepts url again next to urls.
+
+## Why
 Codex users in CI call fetch_page_content with a single url and get a schema error since #45 (KEE-1600, 14 transcripts).
 
 ## Hypothesis
@@ -17,7 +20,7 @@ We believe accepting url again for Codex in CI will stop the schema errors.
 We'll know we're right when argument errors on fetch_page_content drop below 0.5% of calls for a week.
 We'll know we're wrong when argument errors stay above 2% or search task success on the agent slice drops.
 
-## Evidence
+## Checks
 Measured: tool-ab run https://example.test/runs/123 on base and head, 300 tasks, 3 model families.
 
 ## Risk and rollback
@@ -69,12 +72,12 @@ test("placeholders copied out of the template are caught", () => {
 });
 
 test("no-behavior-change skips hypothesis and follow-up but still wants evidence", () => {
-  const body = good.replace(/## Hypothesis\n[\s\S]*?\n## Evidence/, "## Evidence").replace(/## Follow-up\n.*\n/, "");
+  const body = good.replace(/## Hypothesis\n[\s\S]*?\n## Checks/, "## Checks").replace(/## Follow-up\n.*\n/, "");
   assert.deepEqual(checkPrBody({ body, labels: ["no-behavior-change"] }).errors, []);
   assert.match(checkPrBody({ body }).errors.join(), /Missing the "## Hypothesis"/);
   assert.match(checkPrBody({ body }).errors.join(), /Missing the "## Follow-up"/);
-  const noEvidence = body.replace(/## Evidence\n.*\n/, "");
-  assert.match(checkPrBody({ body: noEvidence, labels: ["no-behavior-change"] }).errors.join(), /Missing the "## Evidence"/);
+  const noEvidence = body.replace(/## Checks\n.*\n/, "");
+  assert.match(checkPrBody({ body: noEvidence, labels: ["no-behavior-change"] }).errors.join(), /Missing the "## Checks"/);
 });
 
 test("agent-facing changes need a linked run", () => {
@@ -96,6 +99,31 @@ test("path patterns: prefix, single and double star, regex characters are litera
   assert.ok(double.test("a/b/c/z.md") && !double.test("b/z.md"));
   assert.ok(literal.test("file+(1).txt") && !literal.test("fileee(1).txt"));
   assert.deepEqual(compilePathPatterns(""), []);
+});
+
+test("the headings people already use count: Evidence, Tests, Rollback note", () => {
+  const body = good
+    .replace("## Checks", "## Tests")
+    .replace("## Risk and rollback", "## Rollback note")
+    .replace("## Hypothesis", "## Expected effect");
+  assert.deepEqual(checkPrBody({ body }).errors, []);
+  assert.deepEqual(checkPrBody({ body: good.replace("## Checks", "## Evidence") }).errors, []);
+});
+
+test("UI changes need a Screenshots section with an image or recording", () => {
+  const ui = { files: ["admin-ui/src/App.tsx"], visualPaths: "admin-ui/\nsrc/**/*.css" };
+  assert.match(checkPrBody({ body: good, ...ui }).errors.join(), /needs a "## Screenshots" section/);
+  const words = `${good}\n## Screenshots\nLooks the same as before, trust me.\n`;
+  assert.match(checkPrBody({ body: words, ...ui }).errors.join(), /Screenshots/);
+  for (const shot of [
+    "![after](https://github.com/user-attachments/assets/abc123)",
+    '<img width="600" src="https://github.com/user-attachments/assets/abc123">',
+    "Before and after: docs/pr-screenshots/696/after-desktop.png",
+    "Recording: https://example.test/demo.mp4",
+  ]) {
+    assert.deepEqual(checkPrBody({ body: `${good}\n## Screenshots\n${shot}\n`, ...ui }).errors, [], shot);
+  }
+  assert.deepEqual(checkPrBody({ body: good, files: ["src/server.ts"], visualPaths: ui.visualPaths }).errors, []);
 });
 
 test("headings match by prefix and case; code fences do not start sections", () => {

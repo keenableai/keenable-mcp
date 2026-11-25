@@ -11,7 +11,11 @@
 //   PR_LABELS            JSON array of label names
 //   PR_TITLE, PR_BRANCH
 //   AGENT_FACING_PATHS   one path pattern per line (see compilePathPatterns)
+//   VISUAL_PATHS         same, for files whose change shows on a screen
 //   PRERELEASE           "true" for a prerelease (--release only)
+//
+// --advisory (PR mode only): report problems as warnings and exit 0. Release
+// notes always block: a published version cannot be taken back.
 //
 // Local use:
 //   PR_BODY_FILE=body.md node check-pr-body.mjs
@@ -35,6 +39,7 @@ function parseLabels(raw) {
 }
 
 const release = process.argv.includes("--release");
+const advisory = !release && process.argv.includes("--advisory");
 const body = process.env.PR_BODY_FILE ? readFileSync(process.env.PR_BODY_FILE, "utf8") : "";
 const what = release ? "Release notes" : "PR description";
 const { errors, notices } = release
@@ -46,17 +51,18 @@ const { errors, notices } = release
       labels: parseLabels(process.env.PR_LABELS),
       files: readLines(process.env.PR_FILES_FILE),
       agentFacingPaths: process.env.AGENT_FACING_PATHS ?? "",
+      visualPaths: process.env.VISUAL_PATHS ?? "",
     });
 
 // Workflow commands are line-based: a newline in a message would end it early.
 const oneLine = (s) => s.replace(/\r?\n/g, " ");
-for (const e of errors) console.log(`::error title=${what}::${oneLine(e)}`);
+for (const e of errors) console.log(`::${advisory ? "warning" : "error"} title=${what}::${oneLine(e)}`);
 for (const n of notices) console.log(`::notice title=${what}::${oneLine(n)}`);
 
 const summary = [
-  errors.length ? `## ${what}: needs changes` : `## ${what}: OK`,
+  errors.length ? `## ${what}: ${advisory ? "worth improving (advisory)" : "needs changes"}` : `## ${what}: OK`,
   "",
-  ...errors.map((e) => `- ❌ ${e}`),
+  ...errors.map((e) => `- ${advisory ? "⚠️" : "❌"} ${e}`),
   ...notices.map((n) => `- ℹ️ ${n}`),
   "",
   errors.length
@@ -68,4 +74,4 @@ const summary = [
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
 else console.log(summary);
 
-process.exit(errors.length ? 1 : 0);
+process.exit(errors.length && !advisory ? 1 : 0);

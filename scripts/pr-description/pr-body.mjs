@@ -9,7 +9,14 @@
 
 export const NO_BEHAVIOR_CHANGE_LABEL = "no-behavior-change";
 
+// Headings follow what Keenable PRs already use (What / Why / Checks); aliases
+// accept the common variants, so a description written the usual way passes.
 const PR_SECTIONS = [
+  {
+    heading: "What",
+    minChars: 20,
+    hint: "Say what changes, in a few lines or bullets.",
+  },
   {
     heading: "Why",
     minChars: 40,
@@ -17,27 +24,39 @@ const PR_SECTIONS = [
   },
   {
     heading: "Hypothesis",
+    aliases: ["Expected effect"],
     minChars: 0,
     behavior: true,
     hint: "Write \"We believe <change> for <who> will result in <outcome>\", then a \"We'll know we're right when …\" line and a \"We'll know we're wrong when …\" line.",
   },
   {
-    heading: "Evidence",
+    heading: "Checks",
+    aliases: ["Evidence", "Tests", "Testing", "Verification"],
     minChars: 20,
-    hint: "Say what you ran and what it showed, with links: an eval run, agents run on base and head, a second model's review, real calls and their output.",
+    hint: "Say what you ran and what it showed, with links: tests and their counts, an eval run, agents run on base and head, a second model's review, real calls and their output.",
   },
   {
     heading: "Risk and rollback",
+    aliases: ["Rollback", "Risk", "Risks"],
     minChars: 20,
     hint: "Say what could break outside the diff and how to undo it.",
   },
   {
     heading: "Follow-up",
+    aliases: ["Follow up", "After merge"],
     minChars: 20,
     behavior: true,
     hint: "Say where you will look once it ships (a Grafana dashboard, a PostHog insight, a scheduled eval) and when. \"None, because …\" is an answer.",
   },
 ];
+
+const SCREENSHOTS = {
+  heading: "Screenshots",
+  aliases: ["Screenshot", "Before and after", "UI"],
+  hint: "Add before and after screenshots (desktop and mobile when the page has both) or a short recording: drag the images into the description, or link them (e.g. docs/pr-screenshots/<PR>/).",
+};
+
+const MEDIA = /!\[[^\]]*\]\([^)]+\)|<img\s|<video\s|https?:\/\/\S*(user-attachments|user-images\.githubusercontent)\S*|\S+\.(png|jpe?g|gif|webp|mp4|webm|mov)\b/i;
 
 // A merge to main can be reverted. A release reaches every user and cannot be
 // taken back, so a stable release carries its own evidence and rollback plan.
@@ -89,10 +108,12 @@ export function parseSections(markdown) {
   return new Map([...sections].map(([name, lines]) => [name, lines.join("\n").trim()]));
 }
 
-function findSection(sections, heading) {
-  const wanted = heading.toLowerCase();
-  for (const [name, text] of sections) {
-    if (name === wanted || [" ", "/", ":"].some((sep) => name.startsWith(`${wanted}${sep}`))) return text;
+function findSection(sections, spec) {
+  const names = typeof spec === "string" ? [spec] : [spec.heading, ...(spec.aliases ?? [])];
+  for (const wanted of names.map((n) => n.toLowerCase())) {
+    for (const [name, text] of sections) {
+      if (name === wanted || [" ", "/", ":", ","].some((sep) => name.startsWith(`${wanted}${sep}`))) return text;
+    }
   }
   return undefined;
 }
@@ -124,9 +145,13 @@ export function compilePathPatterns(spec) {
     });
 }
 
+function listFiles(files) {
+  return files.slice(0, 5).join(", ") + (files.length > 5 ? ", …" : "");
+}
+
 function checkSectionList(sections, specs, errors) {
   for (const section of specs) {
-    const text = findSection(sections, section.heading);
+    const text = findSection(sections, section);
     if (text === undefined) {
       errors.push(`Missing the "## ${section.heading}" section. ${section.hint}`);
       continue;
@@ -148,8 +173,9 @@ function checkSectionList(sections, specs, errors) {
 // Returns { errors, notices }. Errors fail the check; notices are advice.
 // agentFacingPaths: the repo's patterns (see compilePathPatterns) for files
 // whose change reaches agents or API clients directly; those PRs must link a
-// run in Evidence.
-export function checkPrBody({ body = "", title = "", branch = "", labels = [], files = [], agentFacingPaths = "" }) {
+// run in Checks. visualPaths: patterns for files whose change shows on a
+// screen; those PRs need a Screenshots section with an image or recording.
+export function checkPrBody({ body = "", title = "", branch = "", labels = [], files = [], agentFacingPaths = "", visualPaths = "" }) {
   const errors = [];
   const notices = [];
   const sections = parseSections(body ?? "");
@@ -159,7 +185,7 @@ export function checkPrBody({ body = "", title = "", branch = "", labels = [], f
 
   checkSectionList(sections, PR_SECTIONS.filter((s) => !(noBehaviorChange && s.behavior)), errors);
 
-  const hypothesis = findSection(sections, "Hypothesis");
+  const hypothesis = findSection(sections, PR_SECTIONS[2]);
   if (!noBehaviorChange && hypothesis !== undefined && !isEmptyAnswer(hypothesis)) {
     if (!hasClause(hypothesis, "right when")) {
       errors.push(`"## Hypothesis" needs a "We'll know we're right when …" line naming a metric and a threshold.`);
@@ -169,10 +195,18 @@ export function checkPrBody({ body = "", title = "", branch = "", labels = [], f
     }
   }
 
-  const evidence = findSection(sections, "Evidence");
+  const evidence = findSection(sections, PR_SECTIONS[3]);
   if (agentFacing.length > 0 && evidence !== undefined && !URL.test(evidence)) {
-    const shown = agentFacing.slice(0, 5).join(", ") + (agentFacing.length > 5 ? ", …" : "");
-    errors.push(`This PR changes what agents or API clients get directly (${shown}). "## Evidence" must link the run that shows the effect, for example the eval run on base and head.`);
+    errors.push(`This PR changes what agents or API clients get directly (${listFiles(agentFacing)}). "## Checks" must link the run that shows the effect, for example the eval run on base and head.`);
+  }
+
+  const visualPatterns = compilePathPatterns(visualPaths);
+  const visual = files.filter((file) => visualPatterns.some((p) => p.test(file)));
+  if (visual.length > 0) {
+    const shots = findSection(sections, SCREENSHOTS);
+    if (shots === undefined || !MEDIA.test(shots)) {
+      errors.push(`This PR changes what people see (${listFiles(visual)}), so it needs a "## Screenshots" section with an image or recording. ${SCREENSHOTS.hint}`);
+    }
   }
 
   if (!LINEAR_KEY.test(`${title}\n${branch}\n${body ?? ""}`)) {

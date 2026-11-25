@@ -19,6 +19,7 @@ export function checkPrBody(input: {
   labels?: readonly string[];
   files?: readonly string[];
   agentFacingPaths?: string;
+  visualPaths?: string;
 }): CheckResult;
 
 export function checkReleaseNotes(input: { body?: string | null; prerelease?: boolean }): CheckResult;

@@ -1,20 +1,22 @@
 <!--
-A check (pr-body-lint) reads this description. Write your answers outside
-these comments; the check ignores the comments.
-Why the sections exist and how to measure: MEASURING.md in keenableai/ci-workflows.
+pr-body-lint reads this description and points out what's missing. It never
+blocks a merge. Comments like this one are guidance: write outside them.
+How to measure a change: MEASURING.md in keenableai/ci-workflows.
 
 No behavior change (refactor, tests, CI, docs only)? Add the
-`no-behavior-change` label and leave Hypothesis and Follow-up empty.
-Evidence is still required.
+`no-behavior-change` label and leave Hypothesis and Follow-up out.
 -->
+
+## What
+
+<!-- What changes: a tool, a parameter, a description, the skill, install or client config, the bridge. -->
 
 ## Why
 
 <!--
-Who is this for, and what problem do they have? Name a customer or an agent
-segment ("Claude Code users looking up docs", "Codex in CI", "open-source
-agents via OpenRouter"). Link what shows the problem: Linear issue (KEE-123),
-support ticket, transcript, Grafana panel, PostHog insight, failed-fetch report.
+Which agents or clients is this for (Claude Code, Codex, Cursor, a catalog
+scanner), and what goes wrong for them today? Link what shows it: a
+transcript, a Linear or GitHub issue, MCP usage data.
 -->
 
 ## Hypothesis
@@ -22,46 +24,43 @@ support ticket, transcript, Grafana panel, PostHog insight, failed-fetch report.
 <!--
 We believe <change> for <who> will result in <outcome>.
 We'll know we're right when <metric, threshold, where it is measured>.
-We'll know we're wrong when <metric or guardrail threshold>. This is the kill criterion.
+We'll know we're wrong when <metric or guardrail threshold>.
 -->
 
-## Evidence
+## Checks
 
 <!--
-What you ran and what it showed, with links. Mark each claim measured,
-inferred or guess. Pick what fits the change:
+What you ran and what it showed:
+- `npm test` (CI runs Node 18/20/22 and the oldest accepted MCP SDK)
+- `npm run check:discovery` (src/tools.js against the live tools/list) and `npm run check:version`
+- tool description, schema, server instructions or skill changed: give agents
+  of several families (Claude, a GPT/Codex model, an open model) the same tasks
+  on base and head and compare what they do: tool chosen, argument errors,
+  task success. Link the run; required for src/tools.js, src/metadata.js, skills/.
+- the bridge run against the hosted server, and its output
+Say what you could not run and why.
+-->
 
-- Eval: the benchmark on base and head (k-rank-eval, keenable-eval,
-  keenable-bench, search-gym). Report the paired per-query delta and its
-  interval, not two averages. Verdict: better, worse, non-inferior or inconclusive.
-- Agents: give Claude, a GPT/Codex model and an open model (via OpenRouter)
-  the same tasks on base and head. Compare what they do (tool chosen,
-  argument errors, calls per task, task success), not which version they
-  say they prefer.
-- Second opinion: ask a model from another family (Codex if Claude wrote it,
-  and the other way round) to review the diff against the hypothesis. List
-  what you acted on and what you dismissed, and why.
-- Real calls: hit the API, MCP server or SDK and paste the output.
-- Production today: the Grafana panel or PostHog insight that shows the
-  current baseline you expect to move.
+## Docs
 
-This section must link a run when the PR changes something agents or API
-clients get directly (the repo lists those paths in its pr-body-lint workflow).
+<!--
+A tool, parameter, description, server instructions, response shape, install
+or client config, or error message changed? Link the keenable-external-docs
+PR (and the keenable-sdk PR or issue if the API surface moved). Otherwise say why none is needed.
 -->
 
 ## Risk and rollback
 
 <!--
-What could break outside the diff, who would notice, and how to undo it.
-Is a revert enough, or does a migration, cache, config or published release
-outlive it?
+What could break for clients, and how to undo it. npx users get a change only
+in the next npm release, and a release cannot be taken back: say whether this
+should ship as a prerelease on `next` first. Does the hosted server
+(keenable-backend-ts) need to change first?
 -->
 
 ## Follow-up
 
 <!--
-Where you will look once this ships, and when: a Grafana dashboard
-(search-runtime-god, user-analysis-god-dashboard, backend pod health), a
-PostHog insight, error tracking, a scheduled eval. Name the date.
-"None, because …" is an answer when nothing can be measured.
+Where you will look after it ships, and when: MCP tool usage and error rates,
+the discovery-drift job, client reports. "None, because …" is an answer.
 -->

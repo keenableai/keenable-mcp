@@ -23,14 +23,13 @@ In the other Keenable repositories that already compile TypeScript (keenable-bac
 
 ## Pull request descriptions and releases
 
-`pr-body-lint` fails a PR whose description lacks the sections of `.github/pull_request_template.md`. The checker in `scripts/pr-description/` is a verbatim copy of `keenableai/ci-workflows/pr-description/`: change it there, then re-copy.
+Fill the sections of `.github/pull_request_template.md`. `pr-body-lint` points out what's missing and never blocks; its checker in `scripts/pr-description/` is a verbatim copy of `keenableai/ci-workflows/pr-description/` (change it there, then re-copy).
 
-- **Why:** who it is for (a named customer or agent segment) and the evidence they have the problem.
-- **Hypothesis:** "We believe … for … will result in …", plus a "we'll know we're right when …" line and a "we'll know we're wrong when …" line, each with a metric and threshold.
-- **Evidence:** what you actually ran and what it showed, with each claim marked measured, inferred or guess. A change to `src/tools.js`, `src/metadata.js` or `skills/` must link a run, because agents read those directly: run agents of several model families (Claude, a GPT/Codex model, an open model via OpenRouter) on base and head and compare what they do, and get a second-opinion review from another model family.
-- **Risk and rollback:** what could break outside the diff and how to undo it.
-- **Follow-up:** where you will look after it ships and when. "None, because …" is an answer.
+- **What** changes, and **Why**: who it is for (a named agent segment or customer) and what shows the problem.
+- **Hypothesis:** "We believe … for … will result in …", plus "we'll know we're right when …" and "we'll know we're wrong when …", each with a metric and threshold.
+- **Checks:** what you ran and what it showed, each claim marked measured, inferred or guess. A change to `src/tools.js`, `src/metadata.js` or `skills/` links a run: agents of several model families (Claude, a GPT/Codex model, an open model via OpenRouter) on the same tasks on base and head, compared on what they do, plus a second-opinion review from another model family.
+- **Docs**, **Risk and rollback**, and **Follow-up** (where you will look after it ships and when; "None, because …" is an answer).
 
-With the `no-behavior-change` label, Hypothesis and Follow-up can be skipped. The guide to measuring is `MEASURING.md` in `keenableai/ci-workflows/pr-description/`.
+With the `no-behavior-change` label, Hypothesis and Follow-up can be left out. The guide to measuring is `MEASURING.md` in `keenableai/ci-workflows/pr-description/`.
 
-A release reaches every user and can't be taken back, so `publish-npm.yml` also checks the release notes: What changes for users, Evidence (with a link) and Rollback. See "Releasing" in `README.md`. Ship risky changes as a prerelease on `next` first.
+A release reaches every user and can't be taken back, so `publish-npm.yml` checks the release notes and blocks without What changes for users, Evidence (with a link) and Rollback. See "Releasing" in `README.md`. Ship risky changes as a prerelease on `next` first.

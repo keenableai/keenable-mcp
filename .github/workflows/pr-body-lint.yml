@@ -1,10 +1,10 @@
 name: pr-body-lint
 
-# A PR description has to say why the change exists, for whom, the hypothesis
-# and its kill criterion, the evidence, the rollback and where the result will
-# be checked after it ships (.github/pull_request_template.md). A PR that
-# changes what agents read directly (AGENT_FACING_PATHS below) must also link
-# a run.
+# Points out what a PR description is missing: what, why and for whom, the
+# hypothesis and its kill criterion, the checks run, the rollback and where
+# the result will be checked after it ships (.github/pull_request_template.md).
+# A PR that changes what agents read directly (AGENT_FACING_PATHS below) is
+# asked to link a run. Advisory: findings are warnings and the check passes.
 #
 # scripts/pr-description/ is a verbatim copy of the shared checker in
 # keenableai/ci-workflows/pr-description/ (with MEASURING.md, the guide to
@@ -16,9 +16,6 @@ name: pr-body-lint
 # out or executed: the description arrives as data in the event, and the
 # changed files come from the API. That is why the token can stay read-only.
 #
-# Enforcement is the ruleset, not this file: make "pr-body-lint / Description"
-# a required status check on main. auto-approve.yml still approves on Qodo's
-# review; the required check is what stops a merge with an empty description.
 # The check re-runs whenever the description, labels or commits change.
 #
 # Until this file is on main, PRs get no run: pull_request_target reads the
@@ -40,8 +37,7 @@ permissions:
 jobs:
   check:
     name: Description
-    # Dependabot writes its own descriptions. A skipped job satisfies a
-    # required check, so its PRs are not blocked.
+    # Dependabot writes its own descriptions.
     if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -75,4 +71,4 @@ jobs:
             src/tools.js
             src/metadata.js
             skills/
-        run: node scripts/pr-description/check-pr-body.mjs
+        run: node scripts/pr-description/check-pr-body.mjs --advisory
