@@ -76,6 +76,23 @@ Cursor takes this entry:
 }
 ```
 
+Codex takes a table in `~/.codex/config.toml`. Codex has its own web search
+turned on by default, and it keeps using that instead of Keenable, so turn it
+off with the top-level `web_search` key. Put that key above the
+`[mcp_servers.keenable]` line: a key written below a table header belongs to
+that table, and Codex ignores it there without an error.
+
+```toml
+web_search = "disabled"
+
+[mcp_servers.keenable]
+url = "https://api.keenable.ai/mcp-public"
+```
+
+Without a key, use `/mcp-public`. On `/mcp`, the OAuth discovery metadata can
+make Codex start a browser sign-in. To send a key, see [API key](#api-key-optional).
+Restart Codex, then run `/mcp` to check that the server is connected.
+
 Other clients spell it differently:
 
 - **Claude Code**: the command above, or `"type": "http"` in `.mcp.json`
@@ -122,6 +139,20 @@ Claude Code:
 claude mcp add keenable --transport http https://api.keenable.ai/mcp --scope user \
   --header "X-API-Key: YOUR_KEY"
 ```
+
+Codex (`~/.codex/config.toml`, with the `/mcp` URL):
+
+```toml
+web_search = "disabled"
+
+[mcp_servers.keenable]
+url = "https://api.keenable.ai/mcp"
+http_headers = { "X-API-Key" = "YOUR_KEY" }
+```
+
+To keep the key out of the file, replace `http_headers` with
+`env_http_headers = { "X-API-Key" = "KEENABLE_API_KEY" }`. Codex then reads the
+header value from the `KEENABLE_API_KEY` environment variable.
 
 Remote (JSON):
 
