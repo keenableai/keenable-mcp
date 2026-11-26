@@ -30,10 +30,10 @@ test("fetch_page_content takes urls as an array of 1 to 20 strings", () => {
   assert.equal(prop.maxItems, 20);
 });
 
-test("fetch_page_content reads live with max_age_hours 0 to 720", () => {
+test("fetch_page_content takes max_age_hours -1 to 720", () => {
   const prop = fetchTool.inputSchema.properties.max_age_hours;
   assert.equal(prop.type, "number");
-  assert.equal(prop.minimum, 0);
+  assert.equal(prop.minimum, -1);
   assert.equal(prop.maximum, 720);
 });
 
