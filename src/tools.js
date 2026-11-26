@@ -140,7 +140,7 @@ export const TOOLS = [
           "type": "number",
           "minimum": -1,
           "maximum": 720,
-          "description": "How old Keenable's indexed copy may be, in hours; an older copy is read again from the source. 0 always reads the page live. -1 reads only the indexed copy, of any age, never the live page; a page with no indexed copy fails. Use it for pages that change often. When omitted, an indexed copy of any age is used when there is one."
+          "description": "How old Keenable's indexed copy may be, in hours; an older copy is read again from the source. Use it for pages that change often. 0 always reads the page live. -1 reads only the indexed copy, of any age, never the live page; a page with no indexed copy fails. When omitted, an indexed copy of any age is used when there is one."
         },
         "url": {
           "type": "string",
