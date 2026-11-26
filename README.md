@@ -4,7 +4,7 @@ MCP server for live web search and clean-markdown page fetch over the
 [Keenable](https://keenable.ai) web index.
 
 - **Hosted endpoint:** `https://api.keenable.ai/mcp` (Streamable HTTP)
-- **Tools:** `search_web_pages`, `fetch_page_content`
+- **Tools:** `search_web_pages`, `fetch_page_content`, `get_billing`
 - **Keyless by default** (1,000 requests/hour). An optional API key lifts the cap.
 - **Rate limits:** 10 calls per second per organization with a key (by default;
   raise it from the console), and 10 per second plus 1,000 per hour per IP
@@ -22,6 +22,7 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 |---|---|
 | `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `objective` (two or three sentences on what the search is for, at most 1,000 characters), `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards), `moderation` (`moderate` or `strict` to filter unsafe results; leave it out for none). |
 | `fetch_page_content` | Read web pages and return clean markdown. Args: `urls` (1-20 URLs; 1-10 without an API key, where each URL counts as one request toward the keyless rate limit; with a key a call counts as one request however many URLs it has), optional `max_chars` (per page; when omitted, 20,000 characters in total, split evenly across the pages), `prompt` (applied to every page, returning only what you ask for; a page too long for a prompt fails with `prompt_input_too_long`, so fetch it again without `prompt`), `max_age_hours` (`-1` or 0-720: how old Keenable's indexed copy may be; `0` reads the page live; `-1` reads only the indexed copy, of any age, and a page with no indexed copy fails), `session_id`, `output_format`. `url` and `live` are deprecated but still accepted (`live: true` means `max_age_hours: 0`). One URL returns the page as before; several pages are separated by `---` in text and come back as `{"results": [...]}` with `output_format: "json"`, where a page that failed carries its error. The call is a tool error only when every page fails, or when a URL is invalid, private or listed twice (then nothing is fetched). Errors say whether a retry can help (`Retryable: yes` or `no`). |
+| `get_billing` | What each Keenable call costs and, with an API key, how much your organization has left: prices per SKU, plus your balance and where to top up. Without a key, the public list prices. Free, read-only, no arguments. |
 
 ### `exclude_domains`
 
@@ -205,7 +206,7 @@ result once. `peek: true` looks without marking results as read, and
 `includeSeen: true` with a `monitorId` pages through that monitor's results,
 read or not. Pass `reader` to give a second person or task a separate reading
 position. Keyless connections list only
-`search_web_pages` and `fetch_page_content`.
+`search_web_pages`, `fetch_page_content` and `get_billing`.
 
 `create_monitor` takes `query` (required), `name`, `webhookUrl`,
 `includeDomains` and `excludeDomains`. To have each new result pushed to your

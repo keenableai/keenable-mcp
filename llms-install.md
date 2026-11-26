@@ -25,10 +25,11 @@ transport and cannot connect. `keenable_title=cline` only tags the install as
 coming from Cline; if you are installing for any client other than Cline, drop
 it so the install is not counted as Cline.
 
-The server exposes two tools:
+The server exposes three tools:
 
 - `search_web_pages` — live web search. Required arg `query`; optional `site`, `exclude_domains` (array of hosts, each covering its subdomains, or public suffixes with a leading dot such as `.gov`; up to 1,000 distinct entries; the API rejects anything else with `invalid_filter`; full rules in the README's `exclude_domains` section), `published_after`/`published_before`, `acquired_after`/`acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `objective` (what the search is for, at most 1,000 characters), `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards), `moderation` (`moderate` or `strict` to filter unsafe results; leave it out for none). With an API key (below), it also takes `mode` (`pro` or `realtime`).
 - `fetch_page_content` — read web pages and return clean markdown. Arg `urls` (1-20 URLs; 1-10 without an API key, each counting as one request toward the keyless rate limit); optional `max_chars` (per page; when omitted, 20,000 characters in total, split evenly across the pages), `prompt` (applied to every page, returning only what you ask for), `max_age_hours` (`-1` or 0-720; `0` reads the page live; `-1` reads only the indexed copy, of any age, and fails a page with none), `session_id`, `output_format`. The older `url` and `live` still work but are deprecated. Several pages come back separated by `---` (or as `{"results": [...]}` in JSON).
+- `get_billing` — what each call costs and, with an API key, your organization's balance and top-up link. No arguments, free.
 
 ## Optional: API key
 
@@ -50,7 +51,7 @@ the `X-API-Key` header and use the `/mcp` URL:
 ## Verify
 
 After install, ask the agent to list tools for the `keenable` server; it should
-return `search_web_pages` and `fetch_page_content`. A simple check is to run a
+return `search_web_pages`, `fetch_page_content` and `get_billing`. A simple check is to run a
 `search_web_pages` call with `query: "model context protocol"`.
 
 ## Get a key
