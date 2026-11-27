@@ -4,7 +4,7 @@ MCP server for live web search and clean-markdown page fetch over the
 [Keenable](https://keenable.ai) web index.
 
 - **Hosted endpoint:** `https://api.keenable.ai/mcp` (Streamable HTTP)
-- **Tools:** `search_web_pages`, `fetch_page_content`
+- **Tools:** `search_web_pages`, `fetch_page_content`, `find_tools`, `call_tool`
 - **Keyless by default** (1,000 requests/hour). An optional API key lifts the cap.
 - **Rate limits:** 10 calls per second per organization with a key (by default;
   raise it from the console), and 10 per second plus 1,000 per hour per IP
@@ -20,8 +20,12 @@ config paths) that only accept a stdio `command` there is a thin npm wrapper
 
 | Tool | Description |
 |---|---|
-| `search_web_pages` | Live web search. Args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `objective` (two or three sentences on what the search is for, at most 1,000 characters), `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards), `moderation` (`moderate` or `strict` to filter unsafe results; leave it out for none). |
-| `fetch_page_content` | Read web pages and return clean markdown. Args: `urls` (1-20 URLs; 1-10 without an API key, where each URL counts as one request toward the keyless rate limit; with a key a call counts as one request however many URLs it has), optional `max_chars` (per page; when omitted, 20,000 characters in total, split evenly across the pages), `prompt` (applied to every page, returning only what you ask for; a page too long for a prompt fails with `prompt_input_too_long`, so fetch it again without `prompt`), `max_age_hours` (`-1` or 0-720: how old Keenable's indexed copy may be; `0` reads the page live; `-1` reads only the indexed copy, of any age, and a page with no indexed copy fails), `session_id`, `output_format`. `url` and `live` are deprecated but still accepted (`live: true` means `max_age_hours: 0`). One URL returns the page as before; several pages are separated by `---` in text and come back as `{"results": [...]}` with `output_format: "json"`, where a page that failed carries its error. The call is a tool error only when every page fails, or when a URL is invalid, private or listed twice (then nothing is fetched). Errors say whether a retry can help (`Retryable: yes` or `no`). |
+| `search_web_pages` | Live web search. Listed args: `query` (required), `objective`, `site`, `exclude_domains`, `published_after`, `max_results`. The other args below work through `call_tool` or when sent directly. All args: `query` (required), plus optional `mode` (`pro` or `realtime`; not offered on `/mcp-public`), `site`, `exclude_domains`, `published_after` / `published_before`, `acquired_after` / `acquired_before`, `query_time` (point-in-time upper bound, not a recency filter), `max_results` (1-50), `snippet_max_length` (180-10000), `session_id`, `objective` (two or three sentences on what the search is for, at most 1,000 characters), `output_format`, `disable_cards` (plain web pages instead of Keenable-written cards), `moderation` (`moderate` or `strict` to filter unsafe results; leave it out for none). |
+| `fetch_page_content` | Read web pages and return clean markdown. Listed args: `urls`, `prompt`, `max_age_hours` (plus the deprecated `url` and `live`); `max_chars`, `session_id` and `output_format` work through `call_tool` or when sent directly. All args: `urls` (1-20 URLs; 1-10 without an API key, where each URL counts as one request toward the keyless rate limit; with a key a call counts as one request however many URLs it has), optional `max_chars` (per page; when omitted, 20,000 characters in total, split evenly across the pages), `prompt` (applied to every page, returning only what you ask for; a page too long for a prompt fails with `prompt_input_too_long`, so fetch it again without `prompt`), `max_age_hours` (`-1` or 0-720: how old Keenable's indexed copy may be; `0` reads the page live; `-1` reads only the indexed copy, of any age, and a page with no indexed copy fails), `session_id`, `output_format`. `url` and `live` are deprecated but still accepted (`live: true` means `max_age_hours: 0`). One URL returns the page as before; several pages are separated by `---` in text and come back as `{"results": [...]}` with `output_format: "json"`, where a page that failed carries its error. The call is a tool error only when every page fails, or when a URL is invalid, private or listed twice (then nothing is fetched). Errors say whether a retry can help (`Retryable: yes` or `no`). |
+| `find_tools` | Describes the tools and args the list leaves out (`get_billing`, the Monitors tools, unlisted search and fetch args). Arg: `query` (required), what the agent is trying to do. Returns up to three matches with their args and an example call. |
+| `call_tool` | Runs a tool or arg that `find_tools` returned. Args: `name` (required), `arguments`. If every arg is one the listed tool already has, it returns an error that says to call the tool directly. |
+
+The server lists these four tools so the tool list stays small in every agent's context (about 1,300 tokens). The server instructions tell the agent to call `find_tools` for billing, monitors and unlisted fields. A client that calls an unlisted tool or arg by name still gets an answer. See [Available tools](https://docs.keenable.ai/mcp-server#available-tools).
 
 ### `exclude_domains`
 
@@ -200,9 +204,11 @@ submitted and its status.
 
 ## Monitor tools
 
-With an API key (or a Keenable sign-in on a remote connection), the server
-also lists four [Monitors](https://docs.keenable.ai/products/monitors) tools:
+With an API key (or a Keenable sign-in on a remote connection), an agent can
+use four [Monitors](https://docs.keenable.ai/products/monitors) tools:
 `create_monitor`, `list_monitors`, `get_monitor_results` and `delete_monitor`.
+The server doesn't list them: the agent finds them with `find_tools` and runs
+them with `call_tool`, or calls them by name.
 A monitor watches the web for you, in one of two kinds:
 
 - A **search monitor** is a standing query: every newly crawled page that is
@@ -235,8 +241,7 @@ read, so a scheduled task that starts a new chat every hour still gets each
 result once. `peek: true` looks without marking results as read, and
 `includeSeen: true` with a `monitorId` pages through that monitor's results,
 read or not. Pass `reader` to give a second person or task a separate reading
-position. Keyless connections list only
-`search_web_pages` and `fetch_page_content`.
+position. The Monitors tools don't work on keyless connections.
 
 `create_monitor` takes `query` (required), `name`, `webhookUrl`,
 `includeDomains` and `excludeDomains`. To have each new result pushed to your

@@ -8,95 +8,39 @@
 export const TOOLS = [
   {
     "name": "search_web_pages",
-    "description": "Search the live web with Keenable, a search engine built for AI agents. Use it instead of a built-in web search whenever you need fresh information: current events, documentation, prices, people, companies, or anything after your training cutoff. Answers in well under a second.\n\nReturns ranked results, each with title and URL, plus snippets you can cite and the publish date when available. Snippets usually answer the question; to read a page, use fetch_page_content.\n\nExample: {\"query\": \"release notes for the latest Node.js LTS version\", \"published_after\": \"30d\"}\n\nQuery tips: describe the ideal page, not keywords. \"blog post comparing React and Vue performance\" not \"React vs Vue\".\n\nUse date filters (published_after/before, acquired_after/before) and site filter to narrow results; use exclude_domains to leave sites out. Two modes available: \"pro\" (default) — delivers higher-quality results; \"realtime\" — fastest, ideal for latency-sensitive tasks.",
+    "description": "Search the live web. Returns ranked results with a title, a URL, and a snippet. Snippets are usually enough.\n\nExample: {\"query\": \"blog post comparing React and Vue performance\", \"published_after\": \"30d\"}",
     "inputSchema": {
       "type": "object",
       "properties": {
         "query": {
           "type": "string",
-          "description": "Natural language search query. Should be a semantically rich description of the ideal page, not just keywords."
+          "description": "The page, as a sentence. A blog post comparing React and Vue performance, not keywords."
+        },
+        "objective": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Omit unless the search is multi-step or ambiguous. Say what it is for and what the query leaves out. Up to 1,000 characters."
         },
         "site": {
           "type": "string",
-          "description": "Restrict results to a specific site (e.g. \"techcrunch.com\")"
+          "description": "Omit unless you want one host, such as arxiv.org."
+        },
+        "published_after": {
+          "type": "string",
+          "description": "Omit unless age matters. 7d is the last 7 days."
+        },
+        "max_results": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Omit unless you want other than 10. An integer from 1 to 50."
         },
         "exclude_domains": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Never return results from these sites. Entries are host names such as \"example.com\", which also covers its subdomains; up to 1,000 hosts. No paths or wildcards. A public suffix written with a leading dot, such as \".gov\", excludes every host under it. A scheme, a leading \"www.\" or a trailing \"/\" is cleaned up for you."
-        },
-        "acquired_after": {
-          "type": "string",
-          "description": "Keep only pages Keenable acquired (indexed) after this point. Accepts a date (YYYY-MM-DD), an ISO 8601 timestamp, or a relative offset back from the request time such as \"30min\", \"2h\", \"7d\", \"1mo\" or \"1y\"."
-        },
-        "acquired_before": {
-          "type": "string",
-          "description": "Keep only pages Keenable acquired (indexed) before this point. Accepts a date (YYYY-MM-DD), an ISO 8601 timestamp, or a relative offset back from the request time such as \"30min\", \"2h\", \"7d\", \"1mo\" or \"1y\"."
-        },
-        "published_after": {
-          "type": "string",
-          "description": "Keep only pages published after this point, a lower bound on publish time. Use this, not query_time, to get recent results: \"7d\" keeps the last 7 days. Accepts a date (YYYY-MM-DD), an ISO 8601 timestamp, or a relative offset back from the request time such as \"30min\", \"2h\", \"7d\", \"1mo\" or \"1y\"."
-        },
-        "published_before": {
-          "type": "string",
-          "description": "Keep only pages published before this point. Accepts a date (YYYY-MM-DD), an ISO 8601 timestamp, or a relative offset back from the request time such as \"30min\", \"2h\", \"7d\", \"1mo\" or \"1y\"."
-        },
-        "query_time": {
-          "type": "string",
-          "description": "Leave empty for a normal search. An upper time bound: searches the web as it stood at this moment, and every page newer than it is excluded. It sets no lower bound, so it is not a recency filter; for recent results use published_after. Accepts an ISO 8601 datetime (e.g. \"2026-09-20T00:00:00Z\"), a YYYY-MM-DD date, a Unix epoch, or an offset back from now (\"7d\" means as of 7 days ago, not the last 7 days)"
-        },
-        "snippet_max_length": {
-          "type": "integer",
-          "minimum": 180,
-          "maximum": 10000,
-          "description": "How many characters of snippet text to return for each result. Raise it when you need more context per result without fetching the page; lower it to keep the response short. When omitted, a default length is used."
-        },
-        "max_results": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 50,
-          "description": "How many results to return. Ask for more when surveying a topic broadly, fewer for a quick lookup. When omitted, 10 results are returned."
-        },
-        "objective": {
-          "type": "string",
-          "description": "Optional. Two or three natural sentences, with no field labels and no line breaks, that cover: the exact facts, entities, numbers, dates or names a useful page must contain; task context the query does not state (who, where, when, eligibility, date window); which kinds of sources count or must be excluded; what is already established from earlier steps; and what is still unknown. Every sentence must be self-contained: name the entities, places, dates and figures explicitly, and never refer to 'the task', 'the clue', 'the question', 'above' or earlier results. Do not paste the conversation, and do not include personal, confidential or sensitive information. At most 1,000 characters."
-        },
-        "session_id": {
-          "type": "string",
-          "maxLength": 128,
-          "description": "Id of the agent session making this call. Send the same value on every call in one session so its requests can be grouped."
-        },
-        "output_format": {
-          "type": "string",
-          "enum": [
-            "text",
-            "json"
-          ],
-          "default": "text",
-          "description": "Response format: 'text' for readable text, or 'json' for the raw response serialized as JSON when you need to parse fields programmatically."
-        },
-        "mode": {
-          "type": "string",
-          "enum": [
-            "realtime",
-            "pro"
-          ],
-          "description": "Search mode: 'pro' (default) for enhanced results or 'realtime' for fastest results"
-        },
-        "disable_cards": {
-          "type": "boolean",
-          "default": false,
-          "description": "Return search results without cards."
-        },
-        "moderation": {
-          "type": "string",
-          "enum": [
-            "moderate",
-            "strict"
-          ],
-          "description": "Filter unsafe results: 'moderate' or 'strict'. Leave it out for no moderation. Not supported when the query is a URL."
+          "description": "Omit unless the user named hosts to drop, such as pinterest.com."
         }
       },
       "required": [
@@ -113,7 +57,7 @@ export const TOOLS = [
   },
   {
     "name": "fetch_page_content",
-    "description": "Read web pages with Keenable. Use it instead of a built-in web fetch: returns each page as clean markdown (title, URL, publish date when known, content) without navigation or ads. Batch up to 20 URLs in one call. Add a prompt to get back only the part you need from long pages.\n\nExample: {\"urls\": [\"https://nodejs.org/en/about/previous-releases\"], \"prompt\": \"Which version is the current LTS?\"}",
+    "description": "Read pages as clean markdown. Add a prompt to pull one fact from a long page.\n\nExample: {\"urls\": [\"https://nodejs.org/en/about/previous-releases\"], \"prompt\": \"Which version is the current LTS?\"}",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -124,47 +68,28 @@ export const TOOLS = [
           },
           "minItems": 1,
           "maxItems": 20,
-          "description": "The URLs to read, 1 to 20; without an API key, 1 to 10, each counting toward the keyless rate limit. Example: [\"https://example.com\"]"
-        },
-        "max_chars": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "Hard cap on the characters of content returned for each page. Longer pages are cut to fit, ending with \"...\" unless max_chars is 3 or less, and the output says how long the full page is. When omitted, up to 20000 characters in total, split evenly across the pages."
+          "description": "1 to 20 URLs. Without an API key, 1 to 10."
         },
         "prompt": {
           "type": "string",
           "maxLength": 2000,
-          "description": "Extraction instruction for every page. When set, an LLM reads each fetched page and the returned content is only the output for this instruction instead of the full page; use it when you need one detail from long pages. Example: \"List all pricing tiers with their monthly prices\"."
+          "description": "Omit unless you need one fact. On prompt_input_too_long, call again without prompt."
         },
         "max_age_hours": {
           "type": "number",
           "minimum": -1,
           "maximum": 720,
-          "description": "How old Keenable's indexed copy may be, in hours; an older copy is read again from the source. Use it for pages that change often. 0 always reads the page live. -1 reads only the indexed copy, of any age, never the live page; a page with no indexed copy fails. When omitted, an indexed copy of any age is used when there is one."
+          "description": "Omit unless the page changes often. 0 reads the live page. -1 reads only the stored copy."
         },
         "url": {
           "type": "string",
           "deprecated": true,
-          "description": "Deprecated: send urls. A single URL to read."
+          "description": "Deprecated. Send urls."
         },
         "live": {
           "type": "boolean",
           "deprecated": true,
-          "description": "Deprecated: send max_age_hours 0. true reads the page live."
-        },
-        "session_id": {
-          "type": "string",
-          "maxLength": 128,
-          "description": "Id of the agent session making this call. Send the same value on every call in one session so its requests can be grouped."
-        },
-        "output_format": {
-          "type": "string",
-          "enum": [
-            "text",
-            "json"
-          ],
-          "default": "text",
-          "description": "Response format: 'text' for readable text, or 'json' for the raw response serialized as JSON when you need to parse fields programmatically."
+          "description": "Deprecated. Send max_age_hours 0."
         }
       }
     },
@@ -173,6 +98,63 @@ export const TOOLS = [
       "readOnlyHint": true,
       "destructiveHint": false,
       "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "find_tools",
+    "description": "Find a Keenable tool that is not in this list. Pass what you are trying to do, in a few words.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "What you are trying to do, in a few words. Example: how much credit is left."
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "title": "Find tools",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "call_tool",
+    "description": "Run a tool find_tools returned. Pass its name and the arguments it described.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The tool name find_tools returned."
+        },
+        "arguments": {
+          "type": "object",
+          "description": "Omit unless the tool takes arguments. Use the names find_tools showed."
+        },
+        "session_id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Omit unless find_tools returned a session_id. Send that same value."
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "title": "Call tool",
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
       "openWorldHint": true
     }
   }
