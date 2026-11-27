@@ -22,9 +22,24 @@ import { bridgeUserAgent } from "./client-agent.js";
 import { describeError } from "./errors.js";
 import { parseRemoteUrl, refuseRedirects } from "./remote-url.js";
 import { TOOLS } from "./tools.js";
+import { HELP_TEXT, parseArgs } from "./cli-args.js";
 
 // package.json is the single source of the version; a release bumps it there.
 const { version: VERSION } = createRequire(import.meta.url)("../package.json");
+
+const args = parseArgs(process.argv.slice(2));
+if (args.action === "help") {
+  console.log(HELP_TEXT);
+  process.exit(0);
+}
+if (args.action === "version") {
+  console.log(VERSION);
+  process.exit(0);
+}
+if (args.action === "error") {
+  console.error(args.message);
+  process.exit(2);
+}
 
 const REMOTE_URL =
   process.env.KEENABLE_MCP_URL || "https://api.keenable.ai/mcp?keenable_title=npm";

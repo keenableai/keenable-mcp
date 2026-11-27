@@ -261,6 +261,8 @@ search logic in this package; the index and tools live behind
 - `KEENABLE_API_KEY` — optional API key, sent as `X-API-Key`.
 - `KEENABLE_MCP_URL` — override the endpoint (defaults to `https://api.keenable.ai/mcp?keenable_title=npm`). It must be an `https://` URL; plain `http://` is accepted only for `localhost`, `127.0.0.1` and `[::1]`. A URL with a user or password is refused: the key belongs in `KEENABLE_API_KEY`.
 
+The bridge takes no command-line options. `npx -y @keenable/mcp --help` prints usage and `--version` the version; any other argument exits with code 2 and says why, so a typo in a client config doesn't look like a working start.
+
 The wrapper sends the API key to that address only. If the server answers with
 a redirect, the wrapper does not follow it and the call fails with a message
 saying so (the target is not shown); set `KEENABLE_MCP_URL` to the final address.
