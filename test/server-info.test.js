@@ -81,6 +81,6 @@ test("discovery build advertises the metadata and both tools over stdio", async 
   assert.deepEqual(responses[1].result.serverInfo, { name: SERVER_NAME, version: VERSION, ...SERVER_METADATA });
   assert.deepEqual(
     responses[2].result.tools.map((t) => t.name),
-    ["search_web_pages", "fetch_page_content"],
+    ["search_web_pages", "fetch_page_content", "find_tools", "call_tool"],
   );
 });
