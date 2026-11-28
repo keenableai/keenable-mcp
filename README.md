@@ -326,6 +326,7 @@ The MCP Registry entry is still published by hand: bumping
 - Docs: https://docs.keenable.ai/mcp-server
 - Site: https://keenable.ai
 - Registry: [`ai.keenable/web-search`](https://registry.modelcontextprotocol.io/v0/servers?search=ai.keenable) (Official MCP Registry)
+- Glama: [`ai.keenable/web-search`](https://glama.ai/mcp/connectors/ai.keenable/web-search)
 
 ## License
 
