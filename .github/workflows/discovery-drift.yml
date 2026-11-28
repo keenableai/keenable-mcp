@@ -3,22 +3,29 @@ name: discovery-drift
 # src/tools.js is a static copy of the hosted server's tools/list, served by
 # src/discovery.js to catalog scanners that run without network. Nothing ties
 # it to the server, so it drifts silently when the server adds or changes a
-# parameter. This job diffs it against the live tools/list: on pull requests
-# so an edit can't introduce drift, and weekly so server-side changes surface.
-# GitHub emails a failed scheduled run only to the user who last edited the
-# cron line; watch the Actions tab or this workflow's badge for drift.
+# parameter. This job diffs it against the live tools/list.
+#
+# - Pull requests and pushes to main run it only when they touch the tool copy
+#   or this check. It used to run on every PR, so a server-side change failed
+#   every unrelated PR (a README edit) until someone synced tools.js; PRs were
+#   then merged red (#52, #55) and the check stopped meaning anything.
+# - Server-side drift is caught by the daily schedule instead. A failed
+#   scheduled run opens an issue labeled discovery-drift, or comments on the
+#   open one, so it is seen by the team rather than only emailed to whoever
+#   last edited the cron line. Fix it with a PR that syncs src/tools.js.
 # Exit code 2 (server unreachable after retries) fails the job like drift does.
 
 on:
   pull_request:
     branches: [main]
+    paths: [src/tools.js, scripts/check-discovery.mjs, .github/workflows/discovery-drift.yml]
   # Commits pushed straight to main get checked too, not just pull requests.
   push:
     branches: [main]
     paths: [src/tools.js, scripts/check-discovery.mjs, .github/workflows/discovery-drift.yml]
   schedule:
-    # Mondays 07:00 UTC.
-    - cron: '0 7 * * 1'
+    # Daily 07:00 UTC.
+    - cron: '0 7 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -38,4 +45,49 @@ jobs:
         with:
           node-version: 20
       # Dependency-free script: no npm install needed.
-      - run: npm run check:discovery
+      - name: Diff src/tools.js against the live tools/list
+        run: |
+          set -o pipefail
+          npm run -s check:discovery 2>&1 | tee drift.txt
+      - name: Keep the diff for the issue
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift
+          path: drift.txt
+
+  # Opens (or comments on) one issue per drift episode, never one per day.
+  report:
+    needs: check
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: drift
+      - name: Open or update the drift issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh label create discovery-drift --repo "$REPO" --color d93f0b \
+            --description "src/tools.js differs from the live tools/list" 2>/dev/null || true
+          {
+            echo "The daily discovery-drift check failed: src/tools.js no longer matches the hosted server's tools/list (or the server was unreachable). Sync src/tools.js in a PR; see [the run]($RUN_URL)."
+            echo
+            echo '```'
+            tail -c 50000 drift.txt
+            echo '```'
+          } > body.md
+          open=$(gh issue list --repo "$REPO" --label discovery-drift --state open --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --repo "$REPO" --body-file body.md
+          else
+            gh issue create --repo "$REPO" --label discovery-drift \
+              --title "src/tools.js drifted from the live tools/list" --body-file body.md
+          fi
